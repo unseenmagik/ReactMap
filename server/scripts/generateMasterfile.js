@@ -1,40 +1,45 @@
+if (!process.env.NODE_CONFIG_DIR) {
+  process.env.NODE_CONFIG_DIR = `${__dirname}/../src/configs`
+  process.env.ALLOW_CONFIG_MUTATIONS = 'true'
+}
+
 const fs = require('fs')
 const { resolve } = require('path')
-const { rarity: customRarity, api } = require('../src/services/config')
-const fetchJson = require('../src/services/api/fetchJson')
+const config = require('config')
+const fetch = require('node-fetch')
+const { log, HELPERS } = require('../src/services/logger')
 const defaultRarity = require('../src/data/defaultRarity.json')
 
 const rarityObj = {}
+
+const rarityConfig = config.get('rarity')
+const endpoint = config.get('api.pogoApiEndpoints.masterfile')
+
 Object.entries(defaultRarity).forEach(([tier, pokemon]) => {
-  if (customRarity?.[tier]?.length) {
-    customRarity[tier].forEach((mon) => (rarityObj[mon] = tier))
+  if (rarityConfig?.[tier]?.length) {
+    rarityConfig[tier].forEach((mon) => (rarityObj[mon] = tier))
   } else {
     pokemon.forEach((mon) => (rarityObj[mon] = tier))
   }
 })
 
-const generate = async (
-  save = false,
-  historicRarity = new Map(),
-  dbRarity = new Map(),
-) => {
+const generate = async (save = false, historicRarity = {}, dbRarity = {}) => {
   try {
-    if (!api.pogoApiEndpoints.masterfile)
-      throw new Error('No masterfile endpoint')
+    if (!endpoint) throw new Error('No masterfile endpoint')
 
-    const masterfile = await fetchJson(api.pogoApiEndpoints.masterfile)
+    const masterfile = await fetch(endpoint).then((res) => res.json())
 
     const newMf = {
       ...masterfile,
       pokemon: Object.fromEntries(
         Object.values(masterfile.pokemon).map((pokemon) => {
-          const { legendary, mythical, ultraBeast, ...rest } = pokemon
+          const { legendary, mythical, ultraBeast } = pokemon
           const historic =
-            historicRarity.get(pokemon.pokedexId.toString()) || 'never'
+            historicRarity[pokemon.pokedexId.toString()] || 'never'
 
           let rarity =
             (dbRarity.size
-              ? dbRarity.get(`${pokemon.pokedexId}-${pokemon.defaultFormId}`)
+              ? dbRarity[`${pokemon.pokedexId}-${pokemon.defaultFormId}`]
               : rarityObj[pokemon.pokedexId]) || 'never'
           if (legendary) rarity = 'legendary'
           if (mythical) rarity = 'mythical'
@@ -49,11 +54,11 @@ const generate = async (
                 rarity:
                   +formId === pokemon.defaultFormId
                     ? rarity
-                    : dbRarity.get(`${pokemon.pokedexId}-${formId}`) || 'never',
+                    : dbRarity[`${pokemon.pokedexId}-${formId}`] || 'never',
               },
             ]),
           )
-          return [pokemon.pokedexId, { ...rest, forms, rarity, historic }]
+          return [pokemon.pokedexId, { ...pokemon, forms, rarity, historic }]
         }),
       ),
     }
@@ -68,14 +73,18 @@ const generate = async (
     }
     return newMf
   } catch (e) {
-    // eslint-disable-next-line no-console
-    console.warn('[WARN] Unable to generate new masterfile, using existing.', e)
+    log.warn(
+      HELPERS.masterfile,
+      'Unable to generate new masterfile, using existing.',
+      e,
+    )
   }
 }
 
 module.exports.generate = generate
 
 if (require.main === module) {
-  // eslint-disable-next-line no-console
-  generate(true).then(() => console.log('Masterfile generated'))
+  generate(true).then(() =>
+    log.info(HELPERS.masterfile, 'Masterfile generated'),
+  )
 }

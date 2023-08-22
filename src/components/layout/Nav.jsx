@@ -1,11 +1,8 @@
-import React, { useState } from 'react'
-import { Dialog, Snackbar } from '@material-ui/core'
-import { Alert } from '@material-ui/lab'
+import * as React from 'react'
+import Dialog from '@mui/material/Dialog'
 
 import Utility from '@services/Utility'
-import useStyles from '@hooks/useStyles'
 import { useStore, useStatic } from '@hooks/useStore'
-import SlideTransition from '@assets/mui/SlideTransition'
 
 import FloatingBtn from './FloatingBtn'
 import Sidebar from './drawer/Drawer'
@@ -18,12 +15,12 @@ import Motd from './dialogs/Motd'
 import DonorPage from './dialogs/DonorPage'
 import Feedback from './dialogs/Feedback'
 import ResetFilters from './dialogs/ResetFilters'
+import Notification from './general/Notification'
 
 export default function Nav({
   map,
   setManualParams,
   Icons,
-  config,
   setWebhookMode,
   webhookMode,
   settings,
@@ -35,46 +32,44 @@ export default function Nav({
   isMobile,
   isTablet,
 }) {
-  const classes = useStyles()
-  const { perms } = useStatic((state) => state.auth)
-  const webhookAlert = useStatic((state) => state.webhookAlert)
-  const setWebhookAlert = useStatic((state) => state.setWebhookAlert)
   const {
-    map: { enableTutorial, messageOfTheDay, donationPage },
-  } = useStatic((state) => state.config)
-  const userProfile = useStatic((state) => state.userProfile)
-  const setUserProfile = useStatic((state) => state.setUserProfile)
-  const feedback = useStatic((state) => state.feedback)
-  const setFeedback = useStatic((state) => state.setFeedback)
-  const resetFilters = useStatic((state) => state.resetFilters)
-  const setResetFilters = useStatic((state) => state.setResetFilters)
+    auth: { perms },
+    setWebhookAlert,
+    config,
+    setUserProfile,
+    setFeedback,
+    setResetFilters,
+  } = useStatic.getState()
+  const { setFilters, setUserSettings, setTutorial, setMotdIndex } =
+    useStore.getState()
 
-  const filters = useStore((state) => state.filters)
-  const setFilters = useStore((state) => state.setFilters)
-  const userSettings = useStore((state) => state.userSettings)
-  const setUserSettings = useStore((state) => state.setUserSettings)
-  const tutorial = useStore((state) => state.tutorial)
-  const setTutorial = useStore((state) => state.setTutorial)
-  const motdIndex = useStore((state) => state.motdIndex)
-  const setMotdIndex = useStore((s) => s.setMotdIndex)
+  const webhookAlert = useStatic((s) => s.webhookAlert)
+  const userProfile = useStatic((s) => s.userProfile)
+  const feedback = useStatic((s) => s.feedback)
+  const resetFilters = useStatic((s) => s.resetFilters)
 
-  const [drawer, setDrawer] = useState(false)
-  const [dialog, setDialog] = useState({
+  const filters = useStore((s) => s.filters)
+  const userSettings = useStore((s) => s.userSettings)
+  const tutorial = useStore((s) => s.tutorial)
+  const motdIndex = useStore((s) => s.motdIndex)
+
+  const [drawer, setDrawer] = React.useState(false)
+  const [donorPage, setDonorPage] = React.useState(false)
+  const [dialog, setDialog] = React.useState({
     open: false,
     category: '',
     type: '',
   })
-  const [motd, setMotd] = useState(
-    messageOfTheDay.components?.length &&
-      (messageOfTheDay.index > motdIndex ||
-        messageOfTheDay.settings.permanent) &&
+  const [motd, setMotd] = React.useState(
+    config.map.messageOfTheDay.components?.length &&
+      (config.map.messageOfTheDay.index > motdIndex ||
+        config.map.messageOfTheDay.settings.permanent) &&
       ((perms.donor
-        ? messageOfTheDay.settings.donorOnly
-        : messageOfTheDay.settings.freeloaderOnly) ||
-        (!messageOfTheDay.settings.donorOnly &&
-          !messageOfTheDay.settings.freeloaderOnly)),
+        ? config.map.messageOfTheDay.settings.donorOnly
+        : config.map.messageOfTheDay.settings.freeloaderOnly) ||
+        (!config.map.messageOfTheDay.settings.donorOnly &&
+          !config.map.messageOfTheDay.settings.freeloaderOnly)),
   )
-  const [donorPage, setDonorPage] = useState(false)
 
   const toggleDrawer = (open) => (event) => {
     if (
@@ -87,68 +82,63 @@ export default function Nav({
   }
 
   const handleMotdClose = () => {
-    if (!messageOfTheDay.settings.permanent) {
-      setMotdIndex(messageOfTheDay.index)
+    if (!config.map.messageOfTheDay.settings.permanent) {
+      setMotdIndex(config.map.messageOfTheDay.index)
     }
     setMotd(false)
   }
 
-  const toggleDialog = (open, category, type, filter) => (event) => {
-    Utility.analytics(
-      'Menu Toggle',
-      `Open: ${open}`,
-      `Category: ${category} Menu: ${type}`,
-    )
-    if (
-      event.type === 'keydown' &&
-      (event.key === 'Tab' || event.key === 'Shift')
-    ) {
-      return
+  const toggleDialog =
+    (open, category, type, filter) => (event, searchValue) => {
+      Utility.analytics(
+        'Menu Toggle',
+        `Open: ${open}`,
+        `Category: ${category} Menu: ${type}`,
+      )
+      if (
+        event.type === 'keydown' &&
+        (event.key === 'Tab' || event.key === 'Shift')
+      ) {
+        return
+      }
+      setDialog({ open, category, type })
+      if (typeof searchValue === 'object' && type === 'search') {
+        setManualParams({ id: searchValue.id })
+        map.flyTo([searchValue.lat, searchValue.lon], 16)
+      }
+      if (filter && type === 'filters') {
+        setFilters({ ...filters, [category]: { ...filters[category], filter } })
+      }
+      if (filter && type === 'options') {
+        setUserSettings({ ...userSettings, [category]: filter })
+      }
     }
-    setDialog({ open, category, type })
-    if (filter && type === 'search') {
-      setManualParams({ id: filter.id })
-      map.flyTo([filter.lat, filter.lon], 16)
-    }
-    if (filter && type === 'filters') {
-      setFilters({ ...filters, [category]: { ...filters[category], filter } })
-    }
-    if (filter && type === 'options') {
-      setUserSettings({ ...userSettings, [category]: filter })
-    }
-  }
 
   return (
     <>
-      {drawer ? (
-        <Sidebar
-          drawer={drawer}
-          toggleDrawer={toggleDrawer}
-          filters={filters}
-          setFilters={setFilters}
-          toggleDialog={toggleDialog}
-          Icons={Icons}
-        />
-      ) : (
-        <FloatingBtn
-          toggleDrawer={toggleDrawer}
-          toggleDialog={toggleDialog}
-          safeSearch={config.searchable}
-          isMobile={isMobile}
-          perms={perms}
-          webhooks={webhooks}
-          webhookMode={webhookMode}
-          setWebhookMode={setWebhookMode}
-          scanNextMode={scanNextMode}
-          setScanNextMode={setScanNextMode}
-          scanZoneMode={scanZoneMode}
-          setScanZoneMode={setScanZoneMode}
-          settings={settings}
-          donationPage={donationPage}
-          setDonorPage={setDonorPage}
-          setUserProfile={setUserProfile}
-        />
-      )}
+      <Sidebar
+        drawer={drawer}
+        toggleDrawer={toggleDrawer}
+        toggleDialog={toggleDialog}
+      />
+
+      <FloatingBtn
+        toggleDrawer={toggleDrawer}
+        toggleDialog={toggleDialog}
+        safeSearch={config.map.searchable}
+        isMobile={isMobile}
+        webhooks={webhooks}
+        webhookMode={webhookMode}
+        setWebhookMode={setWebhookMode}
+        scanNextMode={scanNextMode}
+        setScanNextMode={setScanNextMode}
+        scanZoneMode={scanZoneMode}
+        setScanZoneMode={setScanZoneMode}
+        settings={settings}
+        donationPage={config.map.donationPage}
+        setDonorPage={setDonorPage}
+        setUserProfile={setUserProfile}
+      />
       <Dialog
         open={userProfile}
         fullScreen={isMobile}
@@ -162,7 +152,7 @@ export default function Nav({
         />
       </Dialog>
       <Dialog
-        open={tutorial && enableTutorial}
+        open={tutorial && config.map.enableTutorial}
         fullScreen={isMobile}
         maxWidth="xs"
         onClose={() => setTutorial(false)}
@@ -189,7 +179,8 @@ export default function Nav({
         />
       </Dialog>
       <Dialog
-        maxWidth="sm"
+        fullScreen={isMobile}
+        maxWidth="md"
         open={dialog.open && dialog.type === 'options'}
         onClose={toggleDialog(false, dialog.category, dialog.type)}
       >
@@ -201,34 +192,35 @@ export default function Nav({
       </Dialog>
       <Dialog
         fullScreen={isMobile}
-        classes={{
-          scrollPaper: classes.scrollPaper,
-          container: classes.container,
-        }}
         open={dialog.open && dialog.type === 'search'}
         onClose={toggleDialog(false, dialog.category, dialog.type)}
+        sx={{
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+          },
+        }}
       >
         <Search
           toggleDialog={toggleDialog}
-          safeSearch={config.searchable}
+          safeSearch={config.map.searchable}
           isMobile={isMobile}
           Icons={Icons}
         />
       </Dialog>
       <Dialog
-        maxWidth="sm"
+        maxWidth={config.map.messageOfTheDay.dialogMaxWidth || 'sm'}
         open={Boolean(motd && !tutorial)}
         onClose={handleMotdClose}
       >
         <Motd
-          motd={messageOfTheDay}
+          motd={config.map.messageOfTheDay}
           perms={perms}
           handleMotdClose={handleMotdClose}
         />
       </Dialog>
       <Dialog open={donorPage} onClose={() => setDonorPage(false)}>
         <DonorPage
-          donorPage={donationPage}
+          donorPage={config.map.donationPage}
           handleDonorClose={() => setDonorPage(false)}
         />
       </Dialog>
@@ -237,7 +229,7 @@ export default function Nav({
         maxWidth={isMobile ? 'sm' : 'xs'}
         onClose={() => setFeedback(false)}
       >
-        <Feedback link={config.feedbackLink} setFeedback={setFeedback} />
+        <Feedback link={config.map.feedbackLink} setFeedback={setFeedback} />
       </Dialog>
       <Dialog
         open={resetFilters}
@@ -246,24 +238,18 @@ export default function Nav({
       >
         <ResetFilters />
       </Dialog>
-      <Snackbar
-        open={Boolean(webhookAlert.open)}
-        onClose={() =>
-          setWebhookAlert({ open: false, severity: 'info', message: '' })
+      <Notification
+        open={!!webhookAlert.open}
+        cb={() =>
+          setWebhookAlert({
+            open: false,
+            severity: webhookAlert.severity,
+            message: '',
+          })
         }
-        TransitionComponent={SlideTransition}
-      >
-        <Alert
-          onClose={() =>
-            setWebhookAlert({ open: false, severity: 'info', message: '' })
-          }
-          severity={webhookAlert.severity}
-          variant="filled"
-          style={{ whiteSpace: 'pre-line', textAlign: 'center' }}
-        >
-          {webhookAlert.message}
-        </Alert>
-      </Snackbar>
+        severity={webhookAlert.severity}
+        messages={[webhookAlert.message]}
+      />
     </>
   )
 }

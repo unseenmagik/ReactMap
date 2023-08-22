@@ -38,55 +38,49 @@
     </div>
     <canvas id="holiday-canvas"></canvas>
     <script>
-      const locales = {
-        de: 'Map wird geladen',
-        en: 'Loading Map',
-        es: 'Cargando Mapa',
-        fr: 'Chargement de la Map',
-        it: 'Caricamento Mappa',
-        ja: 'マップを読み込み中',
-        ko: '맵 로딩 중',
-        nl: 'Map word geladen',
-        pl: 'Ładowanie mapy',
-        'pt-br': 'Carregando Mapa',
-        ru: 'Загрузка карты',
-        sv: 'Laddar karta',
-        th: 'กำลังโหลดแผนที่',
-        tr: 'Harita yükleniyor',
-        'zh-tw': '載入地圖中',
+      try {
+        const localState = window?.localStorage?.getItem('local-state')
+        if (localState) {
+          const { state } = JSON.parse(localState)
+          if (state.darkMode) {
+            document.body.classList.add('dark')
+          }
+        }
+
+        const locales = {
+          de: 'Map wird geladen',
+          en: 'Loading Map',
+          es: 'Cargando Mapa',
+          fr: 'Chargement de la Map',
+          it: 'Caricamento Mappa',
+          ja: 'マップを読み込み中',
+          ko: '맵 로딩 중',
+          nl: 'Map word geladen',
+          pl: 'Ładowanie mapy',
+          'pt-br': 'Carregando Mapa',
+          ru: 'Загрузка карты',
+          sv: 'Laddar karta',
+          th: 'กำลังโหลดแผนที่',
+          tr: 'Harita yükleniyor',
+          'zh-tw': '載入地圖中',
+        }
+        const locale = window?.localStorage?.getItem('i18nextLng') || 'en'
+        const element = document.getElementById('loading-text')
+        if (element) {
+          element.innerText = locales[locale.toLowerCase()] || locales.en
+        }
+      } catch (e) {
+        console.error(e)
       }
-      const locale = window?.localStorage?.getItem('i18nextLng') || 'en'
-      const element = document.getElementById('loading-text')
-      if (element)
-        element.innerText = locales[locale.toLowerCase()] || locales.en
     </script>
     <div id="root"></div>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
-      integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/react-leaflet-markercluster/dist/styles.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.73.0/dist/L.Control.Locate.min.css"
-    />
-
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
     />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-    />
-    <link
-      rel="stylesheet"
-      href="https://use.fontawesome.com/releases/v5.0.7/css/all.css"
+      href="https://use.fontawesome.com/releases/v6.4.0/css/all.css"
     />
     <script type="module" src="/src/index.jsx"></script>
   </body>

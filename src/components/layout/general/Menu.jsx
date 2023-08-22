@@ -1,15 +1,9 @@
 import React, { useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  Drawer,
-  Grid,
-  Typography,
-} from '@material-ui/core'
+import { Dialog, DialogContent, Drawer, Grid, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import Utility from '@services/Utility'
-import { useStore } from '@hooks/useStore'
+import { useStore, useStatic } from '@hooks/useStore'
 import useFilter from '@hooks/useFilter'
 
 import ReactWindow from '@components/layout/general/ReactWindow'
@@ -38,11 +32,11 @@ export default function Menu({
 }) {
   Utility.analytics(`/advanced/${category}`)
 
+  const { setMenus, setAdvMenu } = useStore.getState()
   const menus = useStore((state) => state.menus)
-  const setMenus = useStore((state) => state.setMenus)
   const advMenu = useStore((state) => state.advMenu)
-  const setAdvMenu = useStore((state) => state.setAdvMenu)
   const { t } = useTranslation()
+  const Icons = useStatic((s) => s.Icons)
 
   let columnCount = isTablet ? 3 : 5
   if (isMobile) columnCount = 1
@@ -179,7 +173,7 @@ export default function Menu({
         [id]: { ...tempFilters[id], ...newFilters, enabled: true },
       })
     }
-    setWebhook({ open, id })
+    setWebhook({ open, id: id ?? '' })
   }
 
   const toggleSlotsMenu = (open, id, newFilters) => (event) => {
@@ -239,13 +233,11 @@ export default function Menu({
       name: 'help',
       action: () => setHelpDialog(!helpDialog),
       icon: 'HelpOutline',
-      color: 'white',
     },
     {
       name: 'openFilter',
       action: toggleDrawer(true),
       icon: 'Ballot',
-      color: 'white',
       mobileOnly: true,
     },
     {
@@ -254,19 +246,18 @@ export default function Menu({
         ? toggleWebhook(true, 'global')
         : toggleAdvMenu(true, 'global'),
       icon: category === 'pokemon' || webhookCategory ? 'Tune' : 'FormatSize',
-      color: 'white',
     },
     {
       name: 'disable_all',
       action: () => selectAllOrNone(false),
       icon: 'Clear',
-      color: 'primary',
+      color: 'error',
     },
     {
       name: 'enable_all',
       action: () => selectAllOrNone(true),
       icon: 'Check',
-      color: '#00e676',
+      color: 'success',
     },
     ...extraButtons,
   ]
@@ -317,6 +308,7 @@ export default function Menu({
                     toggleWebhook,
                     webhookCategory,
                     standard: filters.standard,
+                    Icons,
                   }}
                   Tile={Tile}
                 />
@@ -342,7 +334,12 @@ export default function Menu({
         </Grid>
       </DialogContent>
       <Footer options={footerButtons} role="dialog_filter_footer" />
-      <Drawer anchor="bottom" open={filterDrawer} onClose={toggleDrawer(false)}>
+      <Drawer
+        anchor="bottom"
+        sx={{ zIndex: 10000 }}
+        open={filterDrawer}
+        onClose={toggleDrawer(false)}
+      >
         {Options}
       </Drawer>
       <Dialog
@@ -373,7 +370,7 @@ export default function Menu({
         />
       </Dialog>
       <Dialog
-        open={webhook.open}
+        open={!!(webhook.open && webhook.id)}
         fullWidth={!isMobile}
         fullScreen={isMobile}
         onClose={toggleWebhook(false)}

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 const fs = require('fs')
 const { resolve } = require('path')
 const {
@@ -15,7 +14,7 @@ const EventManager = require('./EventManager')
 const PvpWrapper = require('./PvpWrapper')
 
 const Db = new DbCheck(
-  exampleSchemas,
+  exampleSchemas.flatMap((s) => s.useFor),
   config.database,
   config.devOptions.queryDebug,
   config.api,

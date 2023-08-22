@@ -1,26 +1,27 @@
 import React, { useEffect, useRef } from 'react'
-import Menu from '@material-ui/icons/Menu'
-import MyLocation from '@material-ui/icons/MyLocation'
-import ZoomIn from '@material-ui/icons/ZoomIn'
-import ZoomOut from '@material-ui/icons/ZoomOut'
-import Search from '@material-ui/icons/Search'
-import NotificationsActive from '@material-ui/icons/NotificationsActive'
-import Save from '@material-ui/icons/Save'
-import CardMembership from '@material-ui/icons/CardMembership'
-import AttachMoney from '@material-ui/icons/AttachMoney'
-import EuroSymbol from '@material-ui/icons/EuroSymbol'
-import Person from '@material-ui/icons/Person'
-import TrackChanges from '@material-ui/icons/TrackChanges'
-import BlurOn from '@material-ui/icons/BlurOn'
-import { Grid, Fab } from '@material-ui/core'
+import Menu from '@mui/icons-material/Menu'
+import MyLocation from '@mui/icons-material/MyLocation'
+import ZoomIn from '@mui/icons-material/ZoomIn'
+import ZoomOut from '@mui/icons-material/ZoomOut'
+import Search from '@mui/icons-material/Search'
+import NotificationsActive from '@mui/icons-material/NotificationsActive'
+import Save from '@mui/icons-material/Save'
+import CardMembership from '@mui/icons-material/CardMembership'
+import AttachMoney from '@mui/icons-material/AttachMoney'
+import EuroSymbol from '@mui/icons-material/EuroSymbol'
+import Person from '@mui/icons-material/Person'
+import TrackChanges from '@mui/icons-material/TrackChanges'
+import BlurOn from '@mui/icons-material/BlurOn'
+import Grid from '@mui/material/Grid'
+import Fab from '@mui/material/Fab'
 
 import { useTranslation } from 'react-i18next'
 import { useMap } from 'react-leaflet'
 import L from 'leaflet'
 
-import useStyles from '@hooks/useStyles'
 import useLocation from '@hooks/useLocation'
 import { useStore, useStatic } from '@hooks/useStore'
+import FAIcon from './general/FAIcon'
 
 const DonationIcons = {
   dollar: AttachMoney,
@@ -33,7 +34,6 @@ export default function FloatingButtons({
   toggleDialog,
   safeSearch,
   isMobile,
-  perms,
   webhookMode,
   setWebhookMode,
   settings,
@@ -49,13 +49,15 @@ export default function FloatingButtons({
   const { t } = useTranslation()
 
   const {
-    map: { enableFloatingProfileButton },
-    scanner: { scannerType, enableScanNext, enableScanZone },
-  } = useStatic((state) => state.config)
-  const { loggedIn } = useStatic((state) => state.auth)
+    config: {
+      map: { enableFloatingProfileButton, customFloatingIcons = [] },
+      scanner: { scannerType, enableScanNext, enableScanZone },
+    },
+    auth: { loggedIn, perms },
+  } = useStatic.getState()
+
   const map = useMap()
   const ref = useRef(null)
-  const classes = useStyles()
   const { lc, color } = useLocation(map)
   const selectedWebhook = useStore((s) => s.selectedWebhook)
 
@@ -75,15 +77,27 @@ export default function FloatingButtons({
     ? DonationIcons[donationPage.fabIcon || 'card']
     : null
 
+  const disabled =
+    Boolean(webhookMode) || Boolean(scanNextMode) || Boolean(scanZoneMode)
   return (
     <Grid
       container
       direction="column"
       justifyContent="flex-start"
       alignItems="flex-start"
-      className={classes.floatingBtn}
       ref={ref}
-      style={{ width: isMobile ? 50 : 65, zIndex: 5000 }}
+      sx={(theme) => ({
+        width: isMobile ? 50 : 65,
+        zIndex: 5000,
+        '& > *': {
+          margin: `${theme.spacing(1)} !important`,
+          position: 'sticky',
+          top: 0,
+          left: 5,
+          zIndex: 1000,
+          width: 10,
+        },
+      })}
     >
       <Grid item>
         <Fab
@@ -91,11 +105,7 @@ export default function FloatingButtons({
           size={fabSize}
           onClick={toggleDrawer(true)}
           title={t('open_menu')}
-          disabled={
-            Boolean(webhookMode) ||
-            Boolean(scanNextMode) ||
-            Boolean(scanZoneMode)
-          }
+          disabled={disabled}
         >
           <Menu fontSize={iconSize} />
         </Fab>
@@ -107,11 +117,7 @@ export default function FloatingButtons({
             size={fabSize}
             onClick={() => setUserProfile(true)}
             title={t('user_profile')}
-            disabled={
-              Boolean(webhookMode) ||
-              Boolean(scanNextMode) ||
-              Boolean(scanZoneMode)
-            }
+            disabled={disabled}
           >
             <Person fontSize={iconSize} />
           </Fab>
@@ -126,13 +132,9 @@ export default function FloatingButtons({
             size={fabSize}
             onClick={toggleDialog(true, '', 'search')}
             title={t('search')}
-            disabled={
-              Boolean(webhookMode) ||
-              Boolean(scanNextMode) ||
-              Boolean(scanZoneMode)
-            }
+            disabled={disabled}
           >
-            <Search fontSize={iconSize} />
+            <Search fontSize={iconSize} sx={{ color: 'white' }} />
           </Fab>
         </Grid>
       ) : null}
@@ -143,13 +145,9 @@ export default function FloatingButtons({
             size={fabSize}
             onClick={() => setWebhookMode('open')}
             title={selectedWebhook}
-            disabled={
-              Boolean(webhookMode) ||
-              Boolean(scanNextMode) ||
-              Boolean(scanZoneMode)
-            }
+            disabled={disabled}
           >
-            <NotificationsActive fontSize={iconSize} />
+            <NotificationsActive fontSize={iconSize} sx={{ color: 'white' }} />
           </Fab>
         </Grid>
       ) : null}
@@ -166,13 +164,13 @@ export default function FloatingButtons({
             title={t('scan_next')}
             disabled={Boolean(webhookMode) || Boolean(scanZoneMode)}
           >
-            <TrackChanges fontSize={iconSize} />
+            <TrackChanges fontSize={iconSize} sx={{ color: 'white' }} />
           </Fab>
         </Grid>
       ) : null}
       {perms?.scanner?.includes('scanZone') &&
       enableScanZone &&
-      scannerType === 'rdm' ? (
+      scannerType !== 'mad' ? (
         <Grid item>
           <Fab
             color={scanZoneMode === 'setLocation' ? null : 'secondary'}
@@ -185,7 +183,7 @@ export default function FloatingButtons({
             title={t('scan_zone')}
             disabled={Boolean(webhookMode) || Boolean(scanNextMode)}
           >
-            <BlurOn fontSize={iconSize} />
+            <BlurOn fontSize={iconSize} sx={{ color: 'white' }} />
           </Fab>
         </Grid>
       ) : null}
@@ -196,13 +194,9 @@ export default function FloatingButtons({
             size={fabSize}
             onClick={() => setDonorPage(true)}
             title={t('donor_menu')}
-            disabled={
-              Boolean(webhookMode) ||
-              Boolean(scanNextMode) ||
-              Boolean(scanZoneMode)
-            }
+            disabled={disabled}
           >
-            <DonorIcon fontSize={iconSize} />
+            <DonorIcon fontSize={iconSize} sx={{ color: 'white' }} />
           </Fab>
         </Grid>
       ) : null}
@@ -225,7 +219,7 @@ export default function FloatingButtons({
               onClick={() => map.zoomIn()}
               title={t('zoom_in')}
             >
-              <ZoomIn fontSize={iconSize} />
+              <ZoomIn fontSize={iconSize} sx={{ color: 'white' }} />
             </Fab>
           </Grid>
           <Grid item>
@@ -235,7 +229,7 @@ export default function FloatingButtons({
               onClick={() => map.zoomOut()}
               title={t('zoom_out')}
             >
-              <ZoomOut fontSize={iconSize} />
+              <ZoomOut fontSize={iconSize} sx={{ color: 'white' }} />
             </Fab>
           </Grid>
         </>
@@ -248,10 +242,24 @@ export default function FloatingButtons({
             onClick={() => setWebhookMode('open')}
             title={t('save')}
           >
-            <Save fontSize={iconSize} />
+            <Save fontSize={iconSize} sx={{ color: 'white' }} />
           </Fab>
         </Grid>
       )}
+      {customFloatingIcons.map((icon) => (
+        <Grid item key={`${icon.color}${icon.href}${icon.icon}`}>
+          <Fab
+            color={icon.color || 'secondary'}
+            size={fabSize}
+            href={icon.href}
+            referrerPolicy="no-referrer"
+            target={icon.target || '_blank'}
+            disabled={disabled}
+          >
+            <FAIcon className={icon.icon} size={iconSize} />
+          </Fab>
+        </Grid>
+      ))}
     </Grid>
   )
 }

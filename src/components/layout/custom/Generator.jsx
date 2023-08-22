@@ -1,7 +1,7 @@
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
-import { Grid, Divider } from '@material-ui/core'
+import { Grid, Divider } from '@mui/material'
 
 import Utility from '@services/Utility'
 
@@ -17,7 +17,6 @@ export default function Generator({
   block = {},
   defaultReturn = null,
   serverSettings,
-  getServerSettings,
 }) {
   const isMuiColor = block.color === 'primary' || block.color === 'secondary'
   switch (block.type) {
@@ -40,11 +39,7 @@ export default function Generator({
       return <DiscordLogin href={block.link} text={block.text} />
     case 'localLogin':
       return (
-        <LocalLogin
-          href={block.localAuthUrl}
-          serverSettings={serverSettings}
-          getServerSettings={getServerSettings}
-        />
+        <LocalLogin href={block.localAuthUrl} serverSettings={serverSettings} />
       )
     case 'localeSelection':
       return (
@@ -63,16 +58,28 @@ export default function Generator({
           alignItems={block.alignItems}
           justifyContent={block.justifyContent}
         >
-          {block.components.map((subBlock, i) => (
-            <Grid
-              key={i}
-              item
-              {...Utility.getSizes(subBlock.gridSizes)}
-              style={subBlock.gridStyle || { textAlign: 'center' }}
-            >
-              <Generator block={subBlock} defaultReturn={defaultReturn} />
-            </Grid>
-          ))}
+          {block.components.map((subBlock, i) => {
+            const nextGenerator = (
+              <Generator
+                key={i}
+                block={subBlock}
+                defaultReturn={defaultReturn}
+                serverSettings={serverSettings}
+              />
+            )
+            return subBlock.type === 'parent' ? (
+              nextGenerator
+            ) : (
+              <Grid
+                key={i}
+                item
+                {...Utility.getSizes(subBlock.gridSizes)}
+                style={subBlock.gridStyle || { textAlign: 'center' }}
+              >
+                {nextGenerator}
+              </Grid>
+            )
+          })}
         </Grid>
       )
     default:

@@ -1,26 +1,11 @@
 {
+  "READ_ME": "https://github.com/WatWowMap/ReactMap/wiki/04.-Full-Config-Explanation",
   "interface": "0.0.0.0",
   "port": 8080,
-  "packageSource": "git/docker",
   "api": {
-    "sessionSecret": "98ki^e72~!@#(85o3kXLI*#c9wu5l!Zx",
     "reactMapSecret": "You Should Change Me",
     "maxSessions": 5,
     "pvp": {
-      "leagues": [
-        {
-          "name": "great",
-          "cp": 1500
-        },
-        {
-          "name": "ultra",
-          "cp": 2500
-        }
-      ],
-      "levels": [
-        50,
-        51
-      ],
       "reactMapHandlesPvp": false
     }
   },
@@ -36,32 +21,6 @@
     },
     "misc": {
       "enableQuestSetSelector": true
-    }
-  },
-  "clientSideOptions": {
-    "pokemon": {
-      "clustering": true,
-      "glow": [
-        {
-          "name": "Hundo",
-          "perm": "iv",
-          "num": 100,
-          "value": "#ff1744",
-          "op": "="
-        },
-        {
-          "name": "Top 3 Ranks",
-          "perm": "pvp",
-          "num": 3,
-          "value": "#0000ff",
-          "op": "<="
-        },
-        {
-          "name": "Multiple",
-          "perm": "pvp",
-          "value": "#800080"
-        }
-      ]
     }
   },
   "database": {
@@ -80,7 +39,18 @@
           "pokestop",
           "scanCell",
           "spawnpoint",
-          "weather"
+          "weather",
+          "route"
+        ]
+      },
+      {
+        "note": "This is only if you are using golbat and in memory, if you do not know what that is, remove this whole section. If you are using it, you should remove 'device' and 'pokemon' from the scanner database useFor array",
+        "type": "golbat",
+        "endpoint": "http://127.0.0.1:9001",
+        "secret": "",
+        "useFor": [
+          "pokemon",
+          "device"
         ]
       },
       {
@@ -91,7 +61,6 @@
         "password": "reactmap_paw",
         "database": "reactmap_db",
         "useFor": [
-          "session",
           "user"
         ]
       },
@@ -137,123 +106,152 @@
         "areas": []
       }
     ],
+    "aliases": [
+      {
+        "role": "123415123541",
+        "name": "verified"
+      },
+      {
+        "role": "897581458191",
+        "name": "supporter"
+      }
+    ],
     "alwaysEnabledPerms": [],
     "perms": {
       "map": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "pokemon": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "iv": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "pvp": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "gyms": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "raids": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "pokestops": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "eventStops": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "quests": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "lures": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "portals": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "submissionCells": {
         "enabled": true,
+        "trialPeriodEligible": false,
+        "roles": []
+      },
+      "s2cells": {
+        "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "invasions": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "nests": {
         "enabled": true,
+        "trialPeriodEligible": false,
+        "roles": []
+      },
+      "nestSubmissions": {
+        "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "scanAreas": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "weather": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "spawnpoints": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "scanCells": {
+        "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "devices": {
         "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "donor": {
+        "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       },
       "gymBadges": {
         "enabled": true,
+        "trialPeriodEligible": false,
+        "roles": []
+      },
+      "backups": {
+        "enabled": true,
+        "trialPeriodEligible": false,
+        "roles": []
+      },
+      "routes": {
+        "enabled": true,
+        "trialPeriodEligible": false,
+        "roles": []
+      },
+      "showcaseRankings": {
+        "enabled": true,
+        "trialPeriodEligible": false,
         "roles": []
       }
     }
   },
-  "tileServers": [
-    {
-      "name": "auto"
-    },
-    {
-      "name": "Carto",
-      "attribution": "Map tiles by Carto, under CC BY 3.0. Data by  <a href='https://www.openstreetmap.org/'>OpenStreetMap</a>, under ODbL.",
-      "url": "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png",
-      "style": "light"
-    },
-    {
-      "name": "OSM",
-      "attribution": "Map data Â© <a href='https://www.openstreetmap.org'>OpenStreetMap</a> contributors",
-      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      "style": "light"
-    },
-    {
-      "name": "Dark Matter",
-      "attribution": "Â© <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors Â© <a href='https://carto.com/attributions'>CARTO</a>",
-      "url": "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      "style": "dark"
-    },
-    {
-      "name": "Satellite",
-      "attribution": "&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
-      "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      "style": "dark"
-    }
-  ],
   "icons": {
-    "Read_More_Here": "https://github.com/WatWowMap/ReactMap/wiki/Icons-Configuration",
+    "Read_More_Here": "https://github.com/WatWowMap/ReactMap/wiki/06.-Icons-Configuration",
     "customizable": [
       "pokemon",
       "pokestop",
@@ -264,7 +262,7 @@
     "styles": [
       {
         "name": "Default",
-        "path": "https://raw.githubusercontent.com/WatWowMap/wwm-uicons/main/",
+        "path": "https://raw.githubusercontent.com/WatWowMap/wwm-uicons-webp/main",
         "modifiers": {
           "gym": {
             "0": 1,
@@ -279,10 +277,6 @@
         }
       },
       {
-        "name": "PMSF",
-        "path": "https://raw.githubusercontent.com/whitewillem/PogoAssets/main/uicons-outline/"
-      },
-      {
         "name": "Home",
         "path": "https://raw.githubusercontent.com/nileplumb/PkmnHomeIcons/master/UICONS/"
       },
@@ -291,8 +285,8 @@
         "path": "https://raw.githubusercontent.com/nileplumb/PkmnShuffleMap/master/UICONS/"
       },
       {
-        "name": "Half Shiny",
-        "path": "https://raw.githubusercontent.com/jms412/PkmnShuffleMap/master/UICONS_Half_Shiny_Sparkles_256/"
+        "name": "Cage",
+        "path": "https://raw.githubusercontent.com/RagingRectangle/CageMons/main"
       }
     ]
   },

@@ -1,7 +1,9 @@
-/* eslint-disable no-console */
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable no-await-in-loop */
 const router = require('express').Router()
 const { api } = require('../../../services/config')
-const { User } = require('../../../models/index')
+const { Db } = require('../../../services/initialization')
+const { log, HELPERS } = require('../../../services/logger')
 
 router.get('/', async (req, res) => {
   try {
@@ -9,13 +11,125 @@ router.get('/', async (req, res) => {
       api.reactMapSecret &&
       req.headers['react-map-secret'] === api.reactMapSecret
     ) {
-      res.status(200).json(await User.query())
+      res.status(200).json(await Db.models.User.query())
     } else {
       throw new Error('Incorrect or missing API secret')
     }
-    console.log('[API] api/v1/users')
+    log.info(HELPERS.api, 'api/v1/users')
   } catch (e) {
-    console.error('[API Error] api/v1/sessions', e)
+    log.error(HELPERS.api, 'api/v1/sessions', e)
+    res.status(500).json({ status: 'error', reason: e.message })
+  }
+})
+
+router.get('/export', async (req, res) => {
+  try {
+    if (
+      api.reactMapSecret &&
+      req.headers['react-map-secret'] === api.reactMapSecret
+    ) {
+      const users = await Db.models.User.query()
+      const badges = {}
+      await Db.models.Badge.query().then((badgeRes) =>
+        // eslint-disable-next-line no-unused-vars
+        badgeRes.forEach(({ userId, id, ...rest }) => {
+          if (!badges[userId]) {
+            badges[userId] = []
+          }
+          badges[userId].push(rest)
+        }),
+      )
+      const backups = {}
+      await Db.models.Backup.query().then((backupRes) =>
+        // eslint-disable-next-line no-unused-vars
+        backupRes.forEach(({ userId, id, ...rest }) => {
+          if (!backups[userId]) {
+            backups[userId] = []
+          }
+          backups[userId].push(rest)
+        }),
+      )
+      const data = users.map(({ id, ...rest }) => ({
+        ...rest,
+        badges: badges[id] || [],
+        backups: backups[id] || [],
+      }))
+      res.status(200).json(data)
+    } else {
+      throw new Error('Incorrect or missing API secret')
+    }
+    log.info(HELPERS.api, 'api/v1/users')
+  } catch (e) {
+    log.error(HELPERS.api, 'api/v1/users/export', e)
+    res.status(500).json({ status: 'error', reason: e.message })
+  }
+})
+
+router.post('/import', async (req, res) => {
+  try {
+    if (
+      api.reactMapSecret &&
+      req.headers['react-map-secret'] === api.reactMapSecret
+    ) {
+      const { body } = req
+      const bodyArray = Array.isArray(body) ? body : [body]
+
+      const getUser = async (user) => {
+        if (user.username) {
+          const found = await Db.models.User.query().select().findOne({
+            username: user.username,
+          })
+          if (found) return found
+        }
+        if (user.discordId) {
+          const found = await Db.models.User.query().select().findOne({
+            discordId: user.discordId,
+          })
+          if (found) return found
+        }
+        if (user.telegramId) {
+          const found = await Db.models.User.query().select().findOne({
+            telegramId: user.telegramId,
+          })
+          if (found) return found
+        }
+        return Db.models.User.query().insert(user)
+      }
+
+      for (const { backups, badges, ...user } of bodyArray) {
+        const userEntry = await getUser(user)
+
+        log.info(
+          HELPERS.api,
+          'Inserted User',
+          userEntry.id,
+          userEntry.username || userEntry.discordId || userEntry.telegramId,
+        )
+
+        if (badges) {
+          for (const badge of badges) {
+            await Db.models.Badge.query().insert({
+              ...badge,
+              userId: userEntry.id,
+            })
+          }
+        }
+        if (backups) {
+          for (const backup of backups) {
+            await Db.models.Backup.query().insert({
+              ...backup,
+              userId: userEntry.id,
+            })
+          }
+        }
+      }
+      res.status(200).json({ status: 'success' })
+    } else {
+      throw new Error('Incorrect or missing API secret')
+    }
+    log.info(HELPERS.api, 'api/v1/users/import')
+  } catch (e) {
+    log.error(HELPERS.api, 'api/v1/users/import', e)
     res.status(500).json({ status: 'error', reason: e.message })
   }
 })
@@ -26,16 +140,16 @@ router.get('/:id', async (req, res) => {
       api.reactMapSecret &&
       req.headers['react-map-secret'] === api.reactMapSecret
     ) {
-      const user = await User.query().findById(req.params.id)
+      const user = await Db.models.User.query().findById(req.params.id)
       res
         .status(200)
         .json(user || { status: 'error', reason: 'User Not Found' })
     } else {
       throw new Error('Incorrect or missing API secret')
     }
-    console.log(`[API] api/v1/users/${req.params.id}`)
+    log.info(HELPERS.api, `api/v1/users/${req.params.id}`)
   } catch (e) {
-    console.error(`[API Error] api/v1/users/${req.params.id}`, e)
+    log.error(HELPERS.api, `api/v1/users/${req.params.id}`, e)
     res.status(500).json({ status: 'error', reason: e.message })
   }
 })
@@ -46,16 +160,18 @@ router.get('/discord/:id', async (req, res) => {
       api.reactMapSecret &&
       req.headers['react-map-secret'] === api.reactMapSecret
     ) {
-      const user = await User.query().where('discordId', req.params.id).first()
+      const user = await Db.models.User.query()
+        .where('discordId', req.params.id)
+        .first()
       res
         .status(200)
         .json(user || { status: 'error', reason: 'User Not Found' })
     } else {
       throw new Error('Incorrect or missing API secret')
     }
-    console.log(`[API] api/v1/users/discord/${req.params.id}`)
+    log.info(HELPERS.api, `api/v1/users/discord/${req.params.id}`)
   } catch (e) {
-    console.error(`[API Error] api/v1/users/discord/${req.params.id}`, e)
+    log.error(HELPERS.api, `api/v1/users/discord/${req.params.id}`, e)
     res.status(500).json({ status: 'error', reason: e.message })
   }
 })
@@ -66,16 +182,18 @@ router.get('/telegram/:id', async (req, res) => {
       api.reactMapSecret &&
       req.headers['react-map-secret'] === api.reactMapSecret
     ) {
-      const user = await User.query().where('telegramId', req.params.id).first()
+      const user = await Db.models.User.query()
+        .where('telegramId', req.params.id)
+        .first()
       res
         .status(200)
         .json(user || { status: 'error', reason: 'User Not Found' })
     } else {
       throw new Error('Incorrect or missing API secret')
     }
-    console.log(`[API] api/v1/users/telegram/${req.params.id}`)
+    log.info(HELPERS.api, `api/v1/users/telegram/${req.params.id}`)
   } catch (e) {
-    console.error(`[API Error] api/v1/users/telegram/${req.params.id}`, e)
+    log.error(HELPERS.api, `api/v1/users/telegram/${req.params.id}`, e)
     res.status(500).json({ status: 'error', reason: e.message })
   }
 })

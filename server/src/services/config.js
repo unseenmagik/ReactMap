@@ -1,21 +1,17 @@
-/* eslint-disable no-console */
-process.env.NODE_CONFIG_DIR = `${__dirname}/../configs`
-
 const fs = require('fs')
 const { resolve } = require('path')
-const dotenv = require('dotenv')
-const { default: center } = require('@turf/center')
-
-dotenv.config()
 
 const config = require('config')
+const { log, HELPERS } = require('./logger')
 
 const allowedMenuItems = [
   'gyms',
   'nests',
   'pokestops',
   'pokemon',
+  'routes',
   'wayfarer',
+  's2cells',
   'scanAreas',
   'weather',
   'admin',
@@ -33,13 +29,15 @@ try {
   ).length
 
   if (refLength !== defaultLength) {
-    console.error(
-      '[CONFIG] It looks like you have modified the `default.json` file, you should not do this! Make all of your config changes in your `local.json` file.',
+    log.error(
+      HELPERS.config,
+      'It looks like you have modified the `default.json` file, you should not do this! Make all of your config changes in your `local.json` file.',
     )
   }
 } catch (e) {
-  console.error(
-    '[CONFIG] Error trying to read either the default.json or .ref file',
+  log.error(
+    HELPERS.config,
+    'Error trying to read either the default.json or .ref file',
     e,
   )
 }
@@ -103,7 +101,8 @@ if (!fs.existsSync(resolve(`${__dirname}/../configs/local.json`))) {
       ],
     })
   } else {
-    console.error(
+    log.error(
+      HELPERS.config,
       'Missing scanner database config! \nCheck to make sure you have SCANNER_DB_HOST,SCANNER_DB_PORT, SCANNER_DB_NAME, SCANNER_DB_USERNAME, and SCANNER_DB_PASSWORD',
     )
   }
@@ -111,13 +110,14 @@ if (!fs.existsSync(resolve(`${__dirname}/../configs/local.json`))) {
     config.database.schemas.push({
       host: REACT_MAP_DB_HOST,
       port: +REACT_MAP_DB_PORT,
-      database: REACT_MAP_DB_USERNAME,
-      username: REACT_MAP_DB_PASSWORD,
-      password: REACT_MAP_DB_NAME,
-      useFor: ['session', 'user'],
+      database: REACT_MAP_DB_NAME,
+      username: REACT_MAP_DB_USERNAME,
+      password: REACT_MAP_DB_PASSWORD,
+      useFor: ['user'],
     })
   } else {
-    console.log(
+    log.info(
+      HELPERS.config,
       'Missing ReactMap specific table, attempting to use the manual database instead.',
     )
   }
@@ -128,25 +128,45 @@ if (!fs.existsSync(resolve(`${__dirname}/../configs/local.json`))) {
       database: MANUAL_DB_NAME,
       username: MANUAL_DB_USERNAME,
       password: MANUAL_DB_PASSWORD,
-      useFor: hasReactMapDb
-        ? ['nest', 'portal']
-        : ['session', 'user', 'nest', 'portal'],
+      useFor: hasReactMapDb ? ['nest', 'portal'] : ['user', 'nest', 'portal'],
     })
-  } else {
-    console.error(
-      'Missing manual database config! \nCheck to make sure you have MANUAL_DB_HOST,MANUAL_DB_PORT, MANUAL_DB_NAME, MANUAL_DB_USERNAME, and MANUAL_DB_PASSWORD',
+  } else if (!hasReactMapDb) {
+    log.error(
+      HELPERS.config,
+      'Neither a ReactMap database or Manual database was found, you will need one of these to proceed.',
     )
   }
   if (!MAP_GENERAL_START_LAT || !MAP_GENERAL_START_LON) {
-    console.warn(
+    log.warn(
+      HELPERS.config,
       'Missing, MAP_GENERAL_START_LAT OR MAP_GENERAL_START_LON\nYou will be able to proceed but you should add these values to your docker-compose file',
     )
   }
 }
 if (fs.existsSync(resolve(`${__dirname}/../configs/config.json`))) {
-  console.log(
-    '[CONFIG] Config v1 (config.json) found, it is fine to leave it but make sure you are using and updating local.json instead.',
+  log.info(
+    HELPERS.config,
+    'Config v1 (config.json) found, it is fine to leave it but make sure you are using and updating local.json instead.',
   )
+}
+
+if (config.icons.styles.length === 0) {
+  config.icons.styles.push({
+    name: 'Default',
+    path: 'https://raw.githubusercontent.com/WatWowMap/wwm-uicons-webp/main',
+    modifiers: {
+      gym: {
+        0: 1,
+        1: 1,
+        2: 1,
+        3: 3,
+        4: 4,
+        5: 4,
+        6: 18,
+        sizeMultiplier: 1.2,
+      },
+    },
+  })
 }
 
 const checkExtraJsons = (fileName, domain = '') => {
@@ -158,8 +178,9 @@ const checkExtraJsons = (fileName, domain = '') => {
       )
     : {}
   if (Object.keys(generalJson).length) {
-    console.log(
-      `[CONFIG] config ${fileName}.json found, overwriting your config.map.${fileName} with the found data.`,
+    log.info(
+      HELPERS.config,
+      `config ${fileName}.json found, overwriting your config.map.${fileName} with the found data.`,
     )
   }
   if (
@@ -173,8 +194,9 @@ const checkExtraJsons = (fileName, domain = '') => {
         ),
       ) || {}
     if (Object.keys(domainJson).length) {
-      console.log(
-        `[CONFIG] config ${fileName}/${domain}.json found, overwriting your config.map.${fileName} with the found data.`,
+      log.info(
+        HELPERS.config,
+        `config ${fileName}/${domain}.json found, overwriting your config.map.${fileName} with the found data.`,
       )
     }
     return {
@@ -190,13 +212,15 @@ const mergeMapConfig = (obj) => {
   if (process.env.TELEGRAM_BOT_NAME && !obj?.customRoutes?.telegramBotName) {
     if (obj.customRoutes)
       obj.customRoutes.telegramBotName = process.env.TELEGRAM_BOT_NAME
-    console.warn(
-      '[CONFIG] TELEGRAM_BOT_NAME has been moved from the .env file to your config, telegramBotEnvRef is now deprecated.\nplease use customRoutes.telegramBotName instead\n(Move them from your .env file to your config file)',
+    log.warn(
+      HELPERS.config,
+      'TELEGRAM_BOT_NAME has been moved from the .env file to your config, telegramBotEnvRef is now deprecated.\nplease use customRoutes.telegramBotName instead\n(Move them from your .env file to your config file)',
     )
   }
   if (obj?.customRoutes?.telegramBotEnvRef) {
-    console.warn(
-      '[CONFIG] TELEGRAM_BOT_NAME has been moved from the .env file to your config, telegramBotEnvRef is now deprecated.\nplease use customRoutes.telegramBotName instead\n(Move them from your .env file to your config file)',
+    log.warn(
+      HELPERS.config,
+      'TELEGRAM_BOT_NAME has been moved from the .env file to your config, telegramBotEnvRef is now deprecated.\nplease use customRoutes.telegramBotName instead\n(Move them from your .env file to your config file)',
     )
     obj.customRoutes.telegramBotName =
       process.env[obj.customRoutes.telegramBotEnvRef]
@@ -205,14 +229,15 @@ const mergeMapConfig = (obj) => {
     if (obj?.[category]?.components) {
       obj[category].components.forEach((component) => {
         if (component.type === 'telegram' && component.telegramBotEnvRef) {
-          console.warn(
-            '[CONFIG] telegramBotEnvRef is deprecated, please use telegramBotName instead\n',
+          log.warn(
+            HELPERS.config,
+            'telegramBotEnvRef is deprecated, please use telegramBotName instead\n',
             category,
           )
-          console.warn('OLD:\n', component)
+          log.warn('OLD:\n', component)
           component.telegramBotName = process.env[component.telegramBotEnvRef]
           delete component.telegramBotEnvRef
-          console.warn('NEW:\n', component)
+          log.warn('NEW:\n', component)
         }
       })
     }
@@ -223,8 +248,9 @@ const mergeMapConfig = (obj) => {
     !Array.isArray(obj?.holidayEffects) &&
     typeof obj?.holidayEffects === 'object'
   ) {
-    console.warn(
-      '[CONFIG] holidayEffects has been changed to an array, please update your config. Check out `server/src/configs/default.json` for an example.',
+    log.warn(
+      HELPERS.config,
+      'holidayEffects has been changed to an array, please update your config. Check out `server/src/configs/default.json` for an example.',
     )
     obj.holidayEffects = []
   }
@@ -276,140 +302,14 @@ config.multiDomainsObj = Object.fromEntries(
   config.multiDomains.map((d) => [d.domain, mergeMapConfig(d)]),
 )
 
-// Consolidate Auth Methods
-// Create Authentication Objects
-config.authMethods = [
-  ...new Set(
-    config.authentication.strategies
-      .filter((strategy) => strategy.enabled)
-      .map((strategy) => {
-        config.authentication[strategy.name] = strategy
-        return strategy.type
-      }),
-  ),
-]
-
 // Check if empty
 ;['tileServers', 'navigation'].forEach((opt) => {
   if (!config[opt].length) {
-    console.warn(
-      `[${opt}] is empty, you need to add options to it or remove the empty array from your config.`,
+    log.warn(
+      `[${opt.toUpperCase()}] is empty, you need to add options to it or remove the empty array from your config.`,
     )
   }
 })
-
-const manualGeojson = {
-  type: 'FeatureCollection',
-  features: config.manualAreas
-    .filter((area) =>
-      ['lat', 'lon', 'name'].every((k) => k in area && !area.hidden),
-    )
-    .map((area) => {
-      const { lat, lon, ...rest } = area
-      return {
-        type: 'Feature',
-        properties: {
-          center: [lat, lon],
-          manual: true,
-          key: rest.parent ? `${rest.parent}-${rest.name}` : rest.name,
-          ...rest,
-        },
-        geometry: {
-          type: 'Polygon',
-          coordinates: [[[lon, lat]]],
-        },
-      }
-    }),
-}
-
-// Load each areas.json
-const loadScanPolygons = (fileName, domain) => {
-  const geojson = fs.existsSync(resolve(`${__dirname}/../configs/${fileName}`))
-    ? JSON.parse(fs.readFileSync(resolve(__dirname, `../configs/${fileName}`)))
-    : { features: [] }
-  return {
-    ...geojson,
-    features: [
-      ...manualGeojson.features.filter(
-        (f) => !f.properties.domain || f.properties.domain === domain,
-      ),
-      ...geojson.features.map((f) => ({
-        ...f,
-        properties: {
-          ...f.properties,
-          key: f.properties.parent
-            ? `${f.properties.parent}-${f.properties.name}`
-            : f.properties.name,
-          center: center(f).geometry.coordinates.reverse(),
-        },
-      })),
-    ].sort((a, b) => a.properties.name.localeCompare(b.properties.name)),
-  }
-}
-
-// Check if an areas.json exists
-config.scanAreas = {
-  main: loadScanPolygons(config.map.geoJsonFileName),
-  ...Object.fromEntries(
-    config.multiDomains.map((d) => [
-      d.general?.geoJsonFileName ? d.domain : 'main',
-      loadScanPolygons(
-        d.general?.geoJsonFileName || config.map.geoJsonFileName,
-      ),
-    ]),
-  ),
-}
-
-config.scanAreasMenu = Object.fromEntries(
-  Object.entries(config.scanAreas).map(([domain, areas]) => {
-    const parents = { '': { children: [], name: '' } }
-
-    const noHidden = {
-      ...areas,
-      features: areas.features.filter((f) => !f.properties.hidden),
-    }
-    // Finds unique parents and determines if the parents have their own properties
-    noHidden.features.forEach((feature) => {
-      if (feature.properties.parent) {
-        parents[feature.properties.parent] = {
-          name: feature.properties.parent,
-          details: areas.features.find(
-            (area) => area.properties.name === feature.properties.parent,
-          ),
-          children: [],
-        }
-      }
-    })
-
-    // Finds the children of each parent
-    noHidden.features.forEach((feature) => {
-      if (feature.properties.parent) {
-        parents[feature.properties.parent].children.push(feature)
-      } else if (!parents[feature.properties.name]) {
-        parents[''].children.push(feature)
-      }
-    })
-
-    // Create blanks for better formatting when there's an odd number of children
-    Object.values(parents).forEach(({ children }) => {
-      if (children.length % 2 === 1) {
-        children.push({
-          type: 'Feature',
-          properties: { name: '', manual: !!config.manualAreas.length },
-        })
-      }
-    })
-    return [
-      domain,
-      Object.values(parents).sort((a, b) => a.name.localeCompare(b.name)),
-    ]
-  }),
-)
-config.scanAreasObj = Object.fromEntries(
-  Object.values(config.scanAreas)
-    .flatMap((areas) => areas.features)
-    .map((feature) => [feature.properties.name, feature]),
-)
 
 config.api.pvp.leagueObj = Object.fromEntries(
   config.api.pvp.leagues.map((league) => [league.name, league.cp]),
@@ -423,15 +323,105 @@ if (hasLittle) {
     : { little: false, cap: 500 }
 }
 
+const aliasObj = Object.fromEntries(
+  config.authentication.aliases.map((alias) => [alias.name, alias.role]),
+)
+
+const replaceAliases = (role) => aliasObj[role] ?? role
+
+const getJsDate = (dataObj = {}) =>
+  new Date(
+    dataObj.year,
+    dataObj.month - 1,
+    dataObj.day,
+    dataObj.hour || 0,
+    dataObj.minute || 0,
+    dataObj.second || 0,
+    dataObj.millisecond || 0,
+  )
+
+const replaceBothAliases = (incomingObj) => ({
+  ...incomingObj,
+  discordRoles: Array.isArray(incomingObj.discordRoles)
+    ? incomingObj.discordRoles.map(replaceAliases)
+    : undefined,
+  telegramGroups: Array.isArray(incomingObj.telegramGroups)
+    ? incomingObj.telegramGroups.map(replaceAliases)
+    : undefined,
+})
+
+Object.keys(config.authentication.perms).forEach((perm) => {
+  config.authentication.perms[perm].roles =
+    config.authentication.perms[perm].roles.map(replaceAliases)
+})
+
+config.authentication.areaRestrictions =
+  config.authentication.areaRestrictions.map(({ roles, areas }) => ({
+    roles: roles.map(replaceAliases),
+    areas,
+  }))
+
+config.authentication.strategies = config.authentication.strategies.map(
+  (strategy) => ({
+    ...strategy,
+    allowedGuilds: Array.isArray(strategy.allowedGuilds)
+      ? strategy.allowedGuilds.map(replaceAliases)
+      : [],
+    blockedGuilds: Array.isArray(strategy.blockedGuilds)
+      ? strategy.blockedGuilds.map(replaceAliases)
+      : [],
+    groups: Array.isArray(strategy.groups)
+      ? strategy.groups.map(replaceAliases)
+      : [],
+    allowedUsers: Array.isArray(strategy.allowedUsers)
+      ? strategy.allowedUsers.map(replaceAliases)
+      : [],
+    trialPeriod: {
+      ...strategy.trialPeriod,
+      start: {
+        js: getJsDate(strategy?.trialPeriod?.start),
+      },
+      end: {
+        js: getJsDate(strategy?.trialPeriod?.end),
+      },
+      roles: Array.isArray(strategy?.trialPeriod?.roles)
+        ? strategy.trialPeriod.roles.map(replaceAliases)
+        : [],
+    },
+  }),
+)
+
+// Consolidate Auth Methods
+// Create Authentication Objects
+config.authMethods = [
+  ...new Set(
+    config.authentication.strategies
+      .filter((strategy) => strategy.enabled)
+      .map((strategy) => {
+        config.authentication[strategy.name] = strategy
+        return strategy.type
+      }),
+  ),
+]
+
+if (Array.isArray(config.webhooks)) {
+  config.webhooks = config.webhooks.map(replaceBothAliases)
+}
+Object.keys(config.scanner || {}).forEach((key) => {
+  config.scanner[key] = replaceBothAliases(config.scanner[key] || {})
+})
+
 if (
-  !config.authentication.strategies.length ||
-  !config.authentication.strategies.find((strategy) => strategy.enabled)
+  !config.authentication.alwaysEnabledPerms.length &&
+  (!config.authentication.strategies.length ||
+    !config.authentication.strategies.find((strategy) => strategy.enabled))
 ) {
   const enabled = Object.keys(config.authentication.perms).filter(
     (perm) => config.authentication.perms[perm].enabled,
   )
-  console.warn(
-    '[CONFIG] No authentication strategies enabled, adding the following perms to alwaysEnabledPerms array:\n',
+  log.warn(
+    HELPERS.config,
+    'No authentication strategies enabled, adding the following perms to alwaysEnabledPerms array:\n',
     enabled,
   )
   config.authentication.alwaysEnabledPerms = enabled

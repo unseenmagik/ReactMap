@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
 const router = require('express').Router()
 const { api } = require('../../../services/config')
-const { Session } = require('../../../models/index')
+const { Db } = require('../../../services/initialization')
+const { log, HELPERS } = require('../../../services/logger')
 
 router.get('/', async (req, res) => {
   try {
@@ -10,13 +10,15 @@ router.get('/', async (req, res) => {
       req.headers['react-map-secret'] === api.reactMapSecret
     ) {
       const ts = Math.floor(new Date().getTime() / 1000)
-      res.status(200).json(await Session.query().where('expires', '>=', ts))
+      res
+        .status(200)
+        .json(await Db.models.Session.query().where('expires', '>=', ts))
     } else {
       throw new Error('Incorrect or missing API secret')
     }
-    console.log('[API] api/v1/sessions')
+    log.info(HELPERS.api, 'api/v1/sessions')
   } catch (e) {
-    console.error('[API Error] api/v1/sessions/', e)
+    log.error(HELPERS.api, 'api/v1/sessions/', e)
     res.status(500).json({ status: 'ServerError', reason: e.message })
   }
 })
@@ -26,7 +28,7 @@ router.get('/hasValid/:id', async (req, res) => {
       api.reactMapSecret &&
       req.headers['react-map-secret'] === api.reactMapSecret
     ) {
-      const results = await Session.query().whereRaw(
+      const results = await Db.models.Session.query().whereRaw(
         `json_extract(data, '$.passport.user.id') = ${req.params.id}
           OR json_extract(data, '$.passport.user.discordId') = "${req.params.id}"
           OR json_extract(data, '$.passport.user.telegramId') = "${req.params.id}"`,
@@ -35,12 +37,12 @@ router.get('/hasValid/:id', async (req, res) => {
         valid: !!results.length,
         length: results.length,
       })
-      console.log(`[API] api/v1/sessions/hasValid/${req.params.id}`)
+      log.info(HELPERS.api, `api/v1/sessions/hasValid/${req.params.id}`)
     } else {
       throw new Error('Incorrect or missing API secret')
     }
   } catch (e) {
-    console.error(`[API Error] api/v1/sessions/hasValid/${req.params.id}`, e)
+    log.error(HELPERS.api, `api/v1/sessions/hasValid/${req.params.id}`, e)
     res.status(500).json({ status: 'ServerError', reason: e.message })
   }
 })
@@ -51,7 +53,7 @@ router.get('/clearSessions/:id', async (req, res) => {
       api.reactMapSecret &&
       req.headers['react-map-secret'] === api.reactMapSecret
     ) {
-      const results = await Session.query()
+      const results = await Db.models.Session.query()
         .whereRaw(
           `json_extract(data, '$.passport.user.id') = ${req.params.id}
             OR json_extract(data, '$.passport.user.discordId') = "${req.params.id}"
@@ -59,16 +61,12 @@ router.get('/clearSessions/:id', async (req, res) => {
         )
         .delete()
       res.status(200).json({ results })
-      console.log(`[API] api/v1/sessions/clearSessions/${req.params.id}`)
+      log.info(HELPERS.api, `api/v1/sessions/clearSessions/${req.params.id}`)
     } else {
       throw new Error('Incorrect or missing API secret')
     }
-    console.log(`[API] api/v1/sessions/clearSessions/${req.params.id}`)
   } catch (e) {
-    console.error(
-      `[API Error] api/v1/sessions/clearSessions/${req.params.id}`,
-      e,
-    )
+    log.error(HELPERS.api, `api/v1/sessions/clearSessions/${req.params.id}`, e)
     res.status(500).json({ status: 'ServerError', reason: e.message })
   }
 })

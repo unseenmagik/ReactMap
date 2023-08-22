@@ -1,66 +1,71 @@
-/* eslint-disable no-console */
 const router = require('express').Router()
 const passport = require('passport')
 const {
-  isValidSession,
-  clearOtherSessions,
-} = require('../services/sessionStore')
-const {
   authentication: { strategies },
 } = require('../services/config')
+const { Db } = require('../services/initialization')
+const { log, HELPERS } = require('../services/logger')
 
 // Loads up the base auth routes and any custom ones
 
-strategies.forEach((strategy) => {
+strategies.forEach((strategy, i) => {
   const method =
     strategy.type === 'discord' || strategy.type === 'telegram' ? 'get' : 'post'
   if (strategy.enabled) {
-    router[method](
-      `/${strategy.name}`,
-      passport.authenticate(strategy.name, {
-        failureRedirect: '/',
-        successRedirect: '/',
-      }),
-    )
-    router[method](`/${strategy.name}/callback`, async (req, res, next) =>
-      passport.authenticate(strategy.name, async (err, user, info) => {
+    const name = strategy.name ?? `${strategy.type}-${i}`
+    const callbackOptions = {}
+    const authenticateOptions = {
+      failureRedirect: '/',
+      successRedirect: '/',
+    }
+    if (strategy.type === 'discord') {
+      callbackOptions.prompt = strategy.clientPrompt
+    }
+    router[method](`/${name}`, passport.authenticate(name, authenticateOptions))
+    router[method](`/${name}/callback`, async (req, res, next) =>
+      passport.authenticate(name, callbackOptions, async (err, user, info) => {
         if (err) {
           return next(err)
         }
         if (!user) {
-          res.status(401).json(info.message)
+          res.redirect(
+            `/blocked/${encodeURIComponent(
+              new URLSearchParams(info).toString(),
+            )}`,
+          )
         } else {
           try {
             return req.login(user, async () => {
               const { id } = user
-              if (!(await isValidSession(id))) {
-                console.debug(
-                  '[Session] Detected multiple sessions, clearing old ones...',
+              if (!(await Db.models.Session.isValidSession(id))) {
+                log.info(
+                  HELPERS.auth,
+                  'Detected multiple sessions, clearing old ones...',
                 )
-                await clearOtherSessions(id, req.sessionID)
+                await Db.models.Session.clearOtherSessions(id, req.sessionID)
               }
               return res.redirect('/')
             })
           } catch (error) {
-            console.error(error)
+            log.error(HELPERS.auth, error)
             res.redirect('/')
+            next(error)
           }
         }
       })(req, res, next),
     )
-    console.log(
-      `[AUTH] ${method.toUpperCase()} /auth/${
-        strategy.name
-      }/callback route initialized`,
+    log.info(
+      HELPERS.auth,
+      `${method.toUpperCase()} /auth/${name}/callback route initialized`,
     )
   }
 })
 
 router.get('/logout', (req, res) => {
   req.logout((err) => {
-    if (err) console.error('[AUTH] Unable to logout', err)
+    if (err) log.error(HELPERS.auth, 'Unable to logout', err)
   })
-  req.session.destroy()
+  // req.session.destroy()
   res.redirect('/')
 })
 

@@ -1,6 +1,12 @@
-/* eslint-disable no-console */
 process.title = 'ReactMap'
+process.env.FORCE_COLOR = 3
 
+if (!process.env.NODE_CONFIG_DIR) {
+  process.env.NODE_CONFIG_DIR = `${__dirname}/configs`
+  process.env.ALLOW_CONFIG_MUTATIONS = 'true'
+}
+
+require('dotenv').config()
 const path = require('path')
 const express = require('express')
 const logger = require('morgan')
@@ -10,94 +16,173 @@ const passport = require('passport')
 const rateLimit = require('express-rate-limit')
 const i18next = require('i18next')
 const Backend = require('i18next-fs-backend')
-const { ValidationError } = require('apollo-server-core')
-const { ApolloServer } = require('apollo-server-express')
+const { rainbow } = require('chalkercli')
+const Sentry = require('@sentry/node')
+const { ApolloServer } = require('@apollo/server')
+const { expressMiddleware } = require('@apollo/server/express4')
+const {
+  ApolloServerPluginDrainHttpServer,
+} = require('@apollo/server/plugin/drainHttpServer')
+const cors = require('cors')
+const { json } = require('body-parser')
+const http = require('http')
+const { GraphQLError } = require('graphql')
+const { ApolloServerErrorCode } = require('@apollo/server/errors')
+const { parse } = require('graphql')
+const NodeCache = require('node-cache')
 
 const config = require('./services/config')
+const { log, HELPERS } = require('./services/logger')
 const { Db, Event } = require('./services/initialization')
-const { sessionStore } = require('./services/sessionStore')
+const Clients = require('./services/Clients')
+const sessionStore = require('./services/sessionStore')
 const rootRouter = require('./routes/rootRouter')
 const typeDefs = require('./graphql/typeDefs')
 const resolvers = require('./graphql/resolvers')
 const pkg = require('../../package.json')
+const getAreas = require('./services/areas')
+const { connection } = require('./db/knexfile.cjs')
+
+Event.clients = Clients
 
 if (!config.devOptions.skipUpdateCheck) {
   require('./services/checkForUpdates')
 }
 
-const app = express()
+const errorCache = new NodeCache({ stdTTL: 60 * 60 })
 
-const server = new ApolloServer({
-  cors: true,
+const app = express()
+const httpServer = http.createServer(app)
+const apolloServer = new ApolloServer({
   typeDefs,
   resolvers,
   introspection: config.devOptions.enabled,
-  debug: config.devOptions.queryDebug,
-  context: ({ req, res }) => {
-    const perms = req.user ? req.user.perms : req.session.perms
-    return {
-      req,
-      res,
-      Db,
-      Event,
-      perms,
-      serverV: pkg.version || 1,
-      clientV:
-        req.headers['apollographql-client-version']?.trim() || pkg.version || 1,
-    }
-  },
   formatError: (e) => {
-    if (config.devOptions.enabled) {
-      console.warn(['GQL'], e)
+    let customMessage = ''
+    if (e?.message.includes('skipUndefined()') || e?.message === 'old_client') {
+      customMessage =
+        'old client detected, forcing user to refresh, no need to report this error unless it continues to happen'
+    } else if (e.message === 'session_expired') {
+      customMessage =
+        'user session expired, forcing logout, no need to report this error unless it continues to happen'
+    } else if (e.message === 'unauthenticated') {
+      customMessage =
+        'user is not authenticated, forcing logout, no need to report this error unless it continues to happen'
+    }
+
+    const key = `${e.extensions.id || e.extensions.user}-${e.message}`
+    if (errorCache.has(key)) {
       return e
     }
-    if (
-      e instanceof ValidationError ||
-      e?.message.includes('skipUndefined()') ||
-      e?.message === 'old_client'
-    ) {
-      console.log(
-        '[GQL] Old client detected, forcing user to refresh, no need to report this error unless it continues to happen\nClient:',
-        e.extensions.clientV,
-        'Server:',
-        e.extensions.serverV,
-      )
-      return { message: 'old_client' }
-    }
-    if (e.message === 'session_expired') {
-      if (config.devOptions.enabled) {
-        console.log(
-          '[GQL] user session expired, forcing logout, no need to report this error unless it continues to happen',
-        )
-      }
-      return { message: 'session_expired' }
-    }
-    return { message: e.message }
+    errorCache.set(key, true)
+
+    log[customMessage ? 'info' : 'error'](
+      HELPERS.gql,
+      HELPERS[e.extensions.endpoint] ||
+        `[${e.extensions.endpoint?.toUpperCase()}]`,
+      'Client:',
+      e.extensions.clientV,
+      'Server:',
+      e.extensions.serverV,
+      'User:',
+      e.extensions.user || 'Not Logged In',
+      e.extensions.id || '',
+      customMessage || e,
+    )
+    return e
   },
-  formatResponse: (data, context) => {
-    if (config.devOptions.enabled) {
-      const endpoint =
-        context?.operation?.selectionSet?.selections?.[0]?.name?.value
-      const returned = data?.data?.[endpoint]?.length
-      console.log(
-        '[GQL]',
-        'Endpoint:',
-        endpoint,
-        returned ? 'Returned:' : '',
-        returned || '',
-      )
-    }
-    return null
+  logger: {
+    debug: (...e) => log.debug(HELPERS.gql, ...e),
+    info: (...e) => log.info(HELPERS.gql, ...e),
+    warn: (...e) => log.warn(HELPERS.gql, ...e),
+    error: (...e) => log.error(HELPERS.gql, ...e),
   },
+  plugins: [
+    ApolloServerPluginDrainHttpServer({ httpServer }),
+    {
+      async requestDidStart(requestContext) {
+        requestContext.contextValue.startTime = Date.now()
+        const filterCount = Object.keys(
+          requestContext.request?.variables?.filters || {},
+        ).length
+
+        return {
+          async willSendResponse(context) {
+            const { response, contextValue } = context
+            if (
+              response.body.kind === 'single' &&
+              'data' in response.body.singleResult
+            ) {
+              const endpoint =
+                context?.operation?.selectionSet?.selections?.[0]?.name?.value
+              const returned =
+                response.body.singleResult?.data?.[endpoint]?.length || 0
+
+              context.logger.info(
+                HELPERS[endpoint] || `[${endpoint?.toUpperCase()}]`,
+                '|',
+                context.operationName,
+                '|',
+                returned || 0,
+                '|',
+                `${Date.now() - contextValue.startTime}ms`,
+                '|',
+                contextValue.user || 'Not Logged In',
+                '|',
+                'Filters:',
+                filterCount || 0,
+              )
+
+              const { transaction } = contextValue
+
+              if (returned) {
+                transaction.setMeasurement(`${endpoint}.returned`, returned)
+              }
+            }
+          },
+        }
+      },
+    },
+  ],
 })
 
-server.start().then(() => server.applyMiddleware({ app, path: '/graphql' }))
+Sentry.init({
+  dsn:
+    process.env.SENTRY_DSN ||
+    'https://c40dad799323428f83aee04391639345@o1096501.ingest.sentry.io/6117162',
+  environment: process.env.NODE_ENV || 'production',
+  integrations: [
+    // enable HTTP calls tracing
+    new Sentry.Integrations.Http({ tracing: true }),
+    // enable Express.js middleware tracing
+    new Sentry.Integrations.Express({
+      // to trace all requests to the default router
+      app,
+      // alternatively, you can specify the routes you want to trace:
+      // router: someRouter,
+    }),
+    ...Sentry.autoDiscoverNodePerformanceMonitoringIntegrations(),
+  ],
+  tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE) || 0.1,
+  version: pkg.version,
+})
 
-if (config.devOptions.enabled) {
+// RequestHandler creates a separate execution context, so that all
+// transactions/spans/breadcrumbs are isolated across requests
+app.use(Sentry.Handlers.requestHandler())
+// TracingHandler creates a trace for every incoming request
+app.use(Sentry.Handlers.tracingHandler())
+
+if (
+  process.env.LOG_LEVEL === 'debug' ||
+  process.env.LOG_LEVEL === 'trace' ||
+  config.devOptions.enabled
+) {
   app.use(
     logger((tokens, req, res) =>
       [
-        '[EXPRESS]',
+        HELPERS.info,
+        HELPERS.express,
         tokens.method(req, res),
         tokens.url(req, res),
         tokens.status(req, res),
@@ -125,10 +210,12 @@ const rateLimitOptions = {
     type: 'error',
     message: `Too many requests from this IP, please try again in ${config.api.rateLimit.time} minutes.`,
   },
-  /* eslint-disable no-unused-vars */
-  onLimitReached: (req, res, options) => {
-    // eslint-disable-next-line no-console
-    console.warn('user is being rate limited')
+  onLimitReached: (req, res) => {
+    log.info(
+      HELPERS.express,
+      req?.user?.username || 'user',
+      'is being rate limited',
+    )
     res.redirect('/429')
   },
 }
@@ -181,16 +268,27 @@ i18next.use(Backend).init(
       ),
     },
   },
-  (err, t) => {
-    if (err) return console.error(err)
+  (err) => {
+    if (err) return log.error(HELPERS.i18n, err)
   },
 )
 
 app.use(rootRouter, requestRateLimiter)
 
+app.use(Sentry.Handlers.errorHandler())
+
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error('[Express Error]:', err.message)
+  log.error(
+    HELPERS.express,
+    HELPERS.custom(req.originalUrl, '#00d7ac'),
+    req.user ? `- ${req.user.username}` : 'Not Logged In',
+    '|',
+    req.headers['x-forwarded-for'],
+    '|',
+    err,
+  )
+
   switch (err.message) {
     case 'NoCodeProvided':
       return res.redirect('/404')
@@ -201,28 +299,119 @@ app.use((err, req, res, next) => {
   }
 })
 
-Db.determineType().then(async () => {
+apolloServer.start().then(() => {
+  app.use(
+    '/graphql',
+    cors(),
+    json(),
+    expressMiddleware(apolloServer, {
+      context: ({ req, res }) => {
+        const perms = req.user ? req.user.perms : req.session.perms
+        const user = req?.user?.username || ''
+        const id = req?.user?.id || 0
+        const clientV =
+          req.headers['apollographql-client-version']?.trim() ||
+          pkg.version ||
+          1
+        const serverV = pkg.version || 1
+
+        let transaction = res.__sentry_transaction
+        if (!transaction) {
+          transaction = Sentry.startTransaction({ name: 'POST /graphql' })
+        }
+        Sentry.configureScope((scope) => {
+          scope.setSpan(transaction)
+        })
+
+        const definition = parse(req.body.query).definitions.find(
+          (d) => d.kind === 'OperationDefinition',
+        )
+        const errorCtx = {
+          id,
+          user,
+          clientV,
+          serverV,
+          endpoint: definition.name?.value || '',
+        }
+
+        if (clientV && serverV && clientV !== serverV) {
+          throw new GraphQLError('old_client', {
+            extensions: {
+              ...errorCtx,
+              http: { status: 464 },
+              code: ApolloServerErrorCode.BAD_USER_INPUT,
+            },
+          })
+        }
+
+        if (!perms) {
+          throw new GraphQLError('session_expired', {
+            extensions: {
+              ...errorCtx,
+              http: { status: 511 },
+              code: 'EXPIRED',
+            },
+          })
+        }
+
+        if (
+          definition?.operation === 'mutation' &&
+          !id &&
+          definition?.name?.value !== 'SetTutorial'
+        ) {
+          throw new GraphQLError('unauthenticated', {
+            extensions: {
+              ...errorCtx,
+              http: { status: 401 },
+              code: 'UNAUTHENTICATED',
+            },
+          })
+        }
+
+        return {
+          req,
+          res,
+          Db,
+          Event,
+          perms,
+          user,
+          transaction,
+          token: req.headers.token,
+          operation: definition?.operation,
+        }
+      },
+    }),
+  )
+})
+
+connection.migrate.latest().then(async () => {
+  await Db.getDbContext()
   await Promise.all([
     Db.historicalRarity(),
+    Db.getFilterContext(),
     Event.setAvailable('gyms', 'Gym', Db),
     Event.setAvailable('pokestops', 'Pokestop', Db),
     Event.setAvailable('pokemon', 'Pokemon', Db),
     Event.setAvailable('nests', 'Nest', Db),
-  ]).then(async () => {
-    await Promise.all([
-      Event.getUicons(config.icons.styles),
-      Event.getMasterfile(Db.historical, Db.rarity),
-      Event.getInvasions(config.api.pogoApiEndpoints.invasions),
-      Event.getWebhooks(config),
-    ]).then(() => {
-      Event.addAvailable()
-      app.listen(config.port, config.interface, () => {
-        console.log(
-          `[INIT] Server is now listening at http://${config.interface}:${config.port}`,
-        )
-      })
-    })
-  })
+  ])
+  await Promise.all([
+    Event.getUicons(config.icons.styles),
+    Event.getMasterfile(Db.historical, Db.rarity),
+    Event.getInvasions(config.api.pogoApiEndpoints.invasions),
+    Event.getWebhooks(config),
+    getAreas().then((res) => (config.areas = res)),
+  ])
+  httpServer.listen(config.port, config.interface)
+  const text = rainbow(
+    `ℹ ${new Date()
+      .toISOString()
+      .split('.')[0]
+      .split('T')
+      .join(' ')} [ReactMap] Server is now listening at http://${
+      config.interface
+    }:${config.port}`,
+  )
+  setTimeout(() => text.stop(), 3_000)
 })
 
 module.exports = app

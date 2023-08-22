@@ -1,6 +1,6 @@
 /* eslint-disable react/no-array-index-key */
 import React from 'react'
-import { Typography } from '@material-ui/core'
+import { Typography } from '@mui/material'
 
 import Utility from '@services/Utility'
 
@@ -13,7 +13,8 @@ export default function Motd({ motd, perms, handleMotdClose }) {
       configObj={motd}
       defaultTitle="message_of_the_day"
       handleClose={handleMotdClose}
-      contentBody={motd.components.map((block, i) => {
+    >
+      {motd.components.map((block, i) => {
         if (block.donorOnly && !perms.donor) return null
         if (block.freeloaderOnly && perms.donor) return null
         return (
@@ -24,7 +25,7 @@ export default function Motd({ motd, perms, handleMotdClose }) {
           />
         )
       })}
-    />
+    </DialogWrapper>
   )
 }
 

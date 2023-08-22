@@ -1,10 +1,25 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react'
-import { Grid, Button, ButtonGroup, Typography } from '@material-ui/core'
+import React, { useState } from 'react'
+import {
+  Button,
+  ButtonGroup,
+  List,
+  ListItemText,
+  ListItem,
+  Divider,
+} from '@mui/material'
 import { point } from '@turf/helpers'
 import destination from '@turf/destination'
 import { Circle, Marker, Popup } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
 import Utility from '@services/Utility'
+import fallbackIcon from '@components/markers/fallback'
+import {
+  InAllowedArea,
+  ScanCancel,
+  ScanConfirm,
+  ScanQueue,
+  ScanRequests,
+} from './Shared'
 
 const RADIUS_POKEMON = 70
 const RADIUS_GYM = 750
@@ -50,34 +65,6 @@ export default function ScanNextTarget({
   const [position, setPosition] = useState(scanNextLocation)
 
   const { t } = useTranslation()
-  const scanMarkerRef = useRef(null)
-  const scanPopupRef = useRef(null)
-  const eventHandlers = useMemo(
-    () => ({
-      dragend() {
-        const marker = scanMarkerRef.current
-        if (marker) {
-          const { lat, lng } = marker.getLatLng()
-          map.panTo([lat, lng])
-          setPosition([lat, lng])
-          setScanNextLocation([lat, lng])
-          setScanNextCoords(calcScanNextCoords([lat, lng], scanNextType))
-          const popup = scanPopupRef.current
-          if (popup) {
-            popup.openOn(map)
-          }
-        }
-      },
-    }),
-    [position, scanNextLocation, scanNextType],
-  )
-
-  useEffect(() => {
-    const marker = scanMarkerRef.current
-    if (marker) {
-      marker.openPopup()
-    }
-  }, [])
 
   const isInAllowedArea = scanNextAreaRestriction.length
     ? Utility.checkAreaValidity(position, scanNextAreaRestriction, scanAreas)
@@ -87,26 +74,37 @@ export default function ScanNextTarget({
     <>
       <Marker
         draggable
-        eventHandlers={eventHandlers}
+        eventHandlers={{
+          dragend({ target, popup }) {
+            if (target) {
+              const { lat, lng } = target.getLatLng()
+              map.panTo([lat, lng])
+              setPosition([lat, lng])
+              setScanNextLocation([lat, lng])
+              setScanNextCoords(calcScanNextCoords([lat, lng], scanNextType))
+            }
+            if (popup) {
+              popup.openPopup()
+            }
+          },
+        }}
         position={position}
-        ref={scanMarkerRef}
+        ref={(ref) => {
+          if (ref && !ref.isPopupOpen()) ref.openPopup()
+        }}
+        icon={fallbackIcon()}
       >
-        <Popup minWidth={90} maxWidth={150} ref={scanPopupRef} autoPan={false}>
-          <Grid
-            container
-            alignItems="center"
-            justifyContent="center"
-            direction="column"
-            spacing={2}
-          >
-            <Grid item>
-              <Typography variant="subtitle2" align="center">
-                {t('scan_next_choose')}
-              </Typography>
-            </Grid>
-            {scannerType === 'rdm' && (
-              <Grid item xs={12} style={{ textAlign: 'center' }}>
-                <ButtonGroup size="small">
+        <Popup minWidth={90} maxWidth={200} autoPan={false}>
+          <List>
+            <ListItemText
+              className="no-leaflet-margin"
+              secondary={t('scan_next_choose')}
+              style={{ textAlign: 'center' }}
+            />
+            <Divider style={{ margin: '10px 0' }} />
+            {scannerType !== 'mad' && (
+              <ListItem>
+                <ButtonGroup size="small" fullWidth>
                   {['S', 'M', 'XL'].map((item) => (
                     <Button
                       key={item}
@@ -121,49 +119,21 @@ export default function ScanNextTarget({
                     </Button>
                   ))}
                 </ButtonGroup>
-              </Grid>
+              </ListItem>
             )}
-            <Grid item style={{ textAlign: 'center' }}>
-              {scanNextShowScanCount && (
-                <Typography variant="body2" style={{ margin: '0px 0px 12px' }}>
-                  {`${t('scan_requests')}: ${scanNextCoords?.length}`}
-                </Typography>
-              )}
-              {scanNextShowScanQueue && (
-                <Typography variant="body2" style={{ margin: '0px 0px 12px' }}>
-                  {`${t('scan_queue')}: ${queue || '...'}`}
-                </Typography>
-              )}
-              <Button
-                color="secondary"
-                variant="contained"
-                disabled={Boolean(
-                  scanNextAreaRestriction?.length && !isInAllowedArea,
-                )}
-                onClick={() => setScanNextMode('sendCoords')}
-              >
-                {t('click_to_scan')}
-              </Button>
-            </Grid>
-            <Grid item style={{ display: isInAllowedArea ? 'none' : 'block' }}>
-              <Typography
-                variant="body2"
-                align="center"
-                style={{ fontStyle: 'italic' }}
-              >
-                {t('scan_outside_area')}
-              </Typography>
-            </Grid>
-            <Grid item>
-              <Button
-                align="left"
-                size="small"
-                onClick={() => setScanNextMode(false)}
-              >
-                {t('cancel')}
-              </Button>
-            </Grid>
-          </Grid>
+            {scanNextShowScanCount && (
+              <ScanRequests amount={scanNextCoords?.length} />
+            )}
+            {scanNextShowScanQueue && <ScanQueue queue={queue} />}
+            <Divider style={{ margin: '10px 0' }} />
+            <ScanConfirm
+              areaRestrictions={scanNextAreaRestriction}
+              setMode={setScanNextMode}
+              isInAllowedArea={isInAllowedArea}
+            />
+            <InAllowedArea isInAllowedArea={isInAllowedArea} />
+            <ScanCancel setMode={setScanNextMode} />
+          </List>
         </Popup>
       </Marker>
       {scanNextCoords.map((coords) => (

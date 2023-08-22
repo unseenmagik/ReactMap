@@ -6,7 +6,9 @@ import {
   DialogContent,
   MenuItem,
   Switch,
-} from '@material-ui/core'
+  FormControl,
+  InputLabel,
+} from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import Utility from '@services/Utility'
@@ -54,7 +56,13 @@ export default function AdvancedFilter({
       }
     } else {
       const { name, value } = event.target
-      setFilterValues({ ...filterValues, [name]: value })
+      setFilterValues({
+        ...filterValues,
+        [name]:
+          Array.isArray(value) && type === 'pokestops'
+            ? value.filter(Boolean).join(',')
+            : value,
+      })
     }
   }
 
@@ -96,12 +104,20 @@ export default function AdvancedFilter({
     if (type === 'pokestops' && ui.pokestops?.quests) {
       if (!questConditions[advancedFilter.id] && filterValues.adv) {
         setFilterValues({ ...filterValues, adv: '' })
-      } else if (
-        questConditions[advancedFilter.id]?.every(
-          (cond) => cond.title !== filterValues.adv,
-        )
-      ) {
-        setFilterValues({ ...filterValues, adv: '' })
+      } else {
+        const filtered = questConditions[advancedFilter.id]
+          ? filterValues.adv
+              .split(',')
+              .filter((each) =>
+                questConditions[advancedFilter.id].find(
+                  ({ title }) => title === each,
+                ),
+              )
+          : []
+        setFilterValues({
+          ...filterValues,
+          adv: filtered.length ? filtered.join(',') : '',
+        })
       }
     }
   }, [])
@@ -118,7 +134,7 @@ export default function AdvancedFilter({
         ]}
         action={toggleAdvMenu(false, type, filters.filter)}
       />
-      <DialogContent style={{ color: 'white' }}>
+      <DialogContent>
         {type === 'pokemon' ? (
           <Grid
             container
@@ -202,7 +218,7 @@ export default function AdvancedFilter({
             )}
           </Grid>
         ) : (
-          <Grid item xs={12} style={{ textAlign: 'center' }}>
+          <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
             <Size
               filterValues={filterValues}
               handleChange={handleChange}
@@ -216,27 +232,52 @@ export default function AdvancedFilter({
             <Grid
               item
               xs={12}
-              style={{ textAlign: 'center', marginTop: 10, marginBottom: 10 }}
+              style={{
+                textAlign: 'center',
+                marginTop: 10,
+                marginBottom: 10,
+                maxWidth: 200,
+              }}
             >
-              <Typography variant="h6">{t('quest_condition')}</Typography>
-              <Select
-                name="adv"
-                value={filterValues.adv || ''}
+              <FormControl
+                variant="outlined"
+                size="small"
                 fullWidth
-                onChange={(e) => handleChange(e)}
+                sx={{ my: 1 }}
               >
-                <MenuItem value="">
-                  <Typography variant="caption">{t('all')}</Typography>
-                </MenuItem>
-                {questConditions[advancedFilter.id]
-                  .slice()
-                  .sort((a, b) => a.title.localeCompare(b.title))
-                  .map(({ title, target }) => (
-                    <MenuItem key={`${title}-${target}`} value={title}>
-                      <QuestTitle questTitle={title} questTarget={target} />
-                    </MenuItem>
-                  ))}
-              </Select>
+                <InputLabel>{t('quest_condition')}</InputLabel>
+                <Select
+                  name="adv"
+                  value={(filterValues.adv || '').split(',')}
+                  fullWidth
+                  multiple
+                  renderValue={(selected) =>
+                    Array.isArray(selected)
+                      ? `${selected.length} ${t('selected')}`
+                      : selected
+                  }
+                  size="small"
+                  label={t('quest_condition')}
+                  onChange={(e, child) => {
+                    if (child.props.value === '') {
+                      return setFilterValues((prev) => ({ ...prev, adv: '' }))
+                    }
+                    return handleChange(e)
+                  }}
+                >
+                  <MenuItem value="">
+                    <Typography variant="caption">{t('all')}</Typography>
+                  </MenuItem>
+                  {questConditions[advancedFilter.id]
+                    .slice()
+                    .sort((a, b) => a.title.localeCompare(b.title))
+                    .map(({ title, target }) => (
+                      <MenuItem key={`${title}-${target}`} value={title}>
+                        <QuestTitle questTitle={title} questTarget={target} />
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
             </Grid>
           )}
       </DialogContent>

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useStatic } from '@hooks/useStore'
@@ -19,12 +19,14 @@ export default function useFilter(
   reqCategories,
 ) {
   const { t } = useTranslation()
-  const available = useStatic(useCallback((s) => s.available, []))
-  const Icons = useStatic(useCallback((s) => s.Icons, []))
-  const { perms } = useStatic(useCallback((s) => s.auth, []))
-  const { pokemon } = useStatic(useCallback((s) => s.masterfile, []))
-  const setExcludeList = useStatic(useCallback((s) => s.setExcludeList, []))
-  const menuFilters = useStatic(useCallback((s) => s.menuFilters, []))
+  const {
+    available,
+    Icons,
+    auth: { perms },
+    masterfile: { pokemon },
+    setExcludeList,
+    menuFilters,
+  } = useStatic.getState()
 
   const {
     filters: {
@@ -67,8 +69,8 @@ export default function useFilter(
 
   const addItem = (id, item) => {
     count.show += 1
-    filteredObj[id] = tempFilters[id]
     item.url = Icons.getIconById(id)
+    filteredObj[id] = tempFilters[id]
     filteredArr.push(item)
   }
 
@@ -147,7 +149,9 @@ export default function useFilter(
                 if (
                   ((tempAdvFilter.generations || generations[item.genId]) &&
                     (tempAdvFilter.types || typeResolver(item.formTypes)) &&
-                    (tempAdvFilter.rarity || rarity[item.rarity]) &&
+                    (tempAdvFilter.rarity ||
+                      rarity[item.rarity] ||
+                      Object.entries(rarity).some(([k, v]) => v && item[k])) &&
                     (tempAdvFilter.historicRarity ||
                       historicRarity[item.historic]) &&
                     (tempAdvFilter.categories || categories[subCategory]) &&
@@ -178,7 +182,11 @@ export default function useFilter(
                   if (
                     ((tempAdvFilter.generations || generations[item.genId]) &&
                       (tempAdvFilter.types || typeResolver(item.formTypes)) &&
-                      (tempAdvFilter.rarity || rarity[item.rarity]) &&
+                      (tempAdvFilter.rarity ||
+                        rarity[item.rarity] ||
+                        Object.entries(rarity).some(
+                          ([k, v]) => v && item[k],
+                        )) &&
                       (tempAdvFilter.historicRarity ||
                         historicRarity[item.historic]) &&
                       (tempAdvFilter.categories || categories[subCategory]) &&
@@ -225,6 +233,7 @@ export default function useFilter(
                   generations[item.genId] ||
                   item.formTypes.some((x) => types[x]) ||
                   rarity[item.rarity] ||
+                  Object.entries(rarity).some(([k, v]) => v && item[k]) ||
                   historicRarity[item.historic] ||
                   forms[item.name] ||
                   (forms.altForms && item.formId != item.defaultFormId) ||

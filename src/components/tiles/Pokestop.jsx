@@ -55,7 +55,7 @@ const PokestopTile = ({
   if ((showTimer || userSettings.lureTimers) && hasLure) {
     timers.push(item.lure_expire_timestamp)
   }
-  if (showTimer || (userSettings.eventStopTimers && hasEvent)) {
+  if ((showTimer || userSettings.eventStopTimers) && hasEvent) {
     item.events.forEach((event) => {
       if (!event.grunt_type) {
         timers.push(event.event_expire_timestamp)
@@ -130,6 +130,13 @@ const PokestopTile = ({
             pathOptions={{ color: '#32cd32', weight: 1 }}
           />
         )}
+        {!!userSettings.customRange && zoom >= config.interactionRangeZoom && (
+          <Circle
+            center={[item.lat, item.lon]}
+            radius={userSettings.customRange}
+            pathOptions={{ color: 'purple', weight: 0.5 }}
+          />
+        )}
       </Marker>
     )
   )
@@ -138,23 +145,26 @@ const PokestopTile = ({
 const areEqual = (prev, next) =>
   prev.item.id === next.item.id &&
   prev.item.lure_expire_timestamp === next.item.lure_expire_timestamp &&
-  prev.item.quests?.length === next.item.quests?.length &&
-  prev.item.invasions?.length === next.item.invasions?.length &&
   prev.item.updated === next.item.updated &&
   prev.showTimer === next.showTimer &&
+  prev.showCircles === next.showCircles &&
+  prev.item.quests?.length === next.item.quests?.length &&
   (prev.item.quests && next.item.quests
     ? prev.item.quests.every(
-        (q, i) => q.with_ar === next.item.quests[i]?.with_ar,
+        (q, i) =>
+          q.with_ar === next.item.quests[i]?.with_ar &&
+          !next.excludeList.includes(q.key),
       )
     : true) &&
-  (prev.item.quests
-    ? !prev.item.quests.some((quest) => next.excludeList.includes(quest.key))
-    : true) &&
-  (prev.item.invasions
-    ? !prev.item.invasions.some((invasion) =>
-        next.excludeList.includes(invasion.grunt_type),
+  prev.item.invasions?.length === next.item.invasions?.length &&
+  (prev.item.invasions && next.item.invasions
+    ? prev.item.invasions?.every(
+        (inv, i) =>
+          inv.confirmed === next.item?.invasions?.[i]?.confirmed &&
+          inv.grunt_type === next.item?.invasions?.[i]?.grunt_type &&
+          !next.excludeList.includes(inv.grunt_type),
       )
     : true) &&
-  prev.showCircles === next.showCircles
+  prev.item.events?.length === next.item.events?.length
 
 export default memo(PokestopTile, areEqual)

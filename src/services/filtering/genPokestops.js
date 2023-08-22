@@ -8,11 +8,36 @@ export default function genPokestops(t, pokemon, pokestops, categories) {
       perms: ['invasions'],
       webhookOnly: true,
     }
+    tempObj.invasions['gold-stop'] = {
+      name: t('gold_stop'),
+      perms: ['invasions'],
+      webhookOnly: true,
+    }
+    tempObj.invasions.kecleon = {
+      name: t('poke_352'),
+      perms: ['invasions'],
+      webhookOnly: true,
+    }
+    tempObj.invasions.showcase = {
+      name: t('showcase'),
+      perms: ['invasions'],
+      webhookOnly: true,
+    }
   }
 
   Object.keys(pokestops.filter).forEach((id) => {
     if (id !== 'global' && !/\d/.test(id.charAt(0))) {
       switch (id.charAt(0)) {
+        case 'a':
+          if (tempObj.rocket_pokemon) {
+            const name = t(`poke_${id.slice(1).split('-')[0]}`)
+            tempObj.rocket_pokemon[id] = {
+              name,
+              perms: ['invasions'],
+            }
+            tempObj.rocket_pokemon[id].searchMeta = name.toLowerCase()
+          }
+          break
         case 'i':
           if (tempObj.invasions) {
             tempObj.invasions[id] = {

@@ -1,4 +1,4 @@
-const { gql } = require('apollo-server-express')
+const gql = require('graphql-tag')
 const ScannerTypes = require('./scannerTypes')
 const PoracleTypes = require('./poracleTypes')
 const MapTypes = require('./mapTypes')
@@ -13,6 +13,9 @@ module.exports = gql`
   type Query {
     available: Available
     badges: [Badge]
+    backup(id: ID): Backup
+    backups: [Backup]
+    checkUsername(username: String): Boolean
     devices(filters: JSON): [Device]
     geocoder(search: String, name: String): [Geocoder]
     gyms(
@@ -61,6 +64,13 @@ module.exports = gql`
       filters: JSON
     ): [Portal]
     portalsSingle(id: ID, perm: String): Portal
+    s2cells(
+      minLat: Float
+      maxLat: Float
+      minLon: Float
+      maxLon: Float
+      filters: JSON
+    ): [S2Cell]
     scanCells(
       minLat: Float
       maxLat: Float
@@ -83,6 +93,16 @@ module.exports = gql`
       midnight: Int
       onlyAreas: [String]
     ): [Search]
+    searchLure(
+      search: String
+      category: String
+      lat: Float
+      lon: Float
+      locale: String
+      webhookName: String
+      midnight: Int
+      onlyAreas: [String]
+    ): [SearchLure]
     searchQuest(
       search: String
       category: String
@@ -91,7 +111,6 @@ module.exports = gql`
       locale: String
       webhookName: String
       midnight: Int
-
       onlyAreas: [String]
     ): [SearchQuest]
     spawnpoints(
@@ -111,17 +130,34 @@ module.exports = gql`
       zoom: Int
       filters: JSON
     ): [SubmissionCell]
-    weather(filters: JSON): [Weather]
+    weather(
+      minLat: Float
+      maxLat: Float
+      minLon: Float
+      maxLon: Float
+      filters: JSON
+    ): [Weather]
+    route(id: ID): Route
+    routes(
+      minLat: Float
+      maxLat: Float
+      minLon: Float
+      maxLon: Float
+      filters: JSON
+    ): [Route]
     webhook(category: String, status: String, name: String): Poracle
     scanner(category: String, method: String, data: JSON): ScannerApi
   }
 
   type Mutation {
+    createBackup(backup: BackupCreate): Boolean
+    updateBackup(backup: BackupUpdate): Boolean
+    deleteBackup(id: ID): Boolean
     webhook(category: String, data: JSON, status: String, name: String): Poracle
     tutorial(tutorial: Boolean): Boolean
     strategy(strategy: String): Boolean
-    checkUsername(username: String): Boolean
     setGymBadge(gymId: String, badge: Int): Boolean
     setExtraFields(key: String, value: String): Boolean
+    nestSubmission(id: ID, name: String): Boolean
   }
 `

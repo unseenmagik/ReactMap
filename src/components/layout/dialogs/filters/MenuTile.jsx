@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import Check from '@material-ui/icons/Check'
-import Clear from '@material-ui/icons/Clear'
-import Tune from '@material-ui/icons/Tune'
-import FormatSize from '@material-ui/icons/FormatSize'
-import Settings from '@material-ui/icons/Settings'
-import { Grid, IconButton, Typography } from '@material-ui/core'
+import Check from '@mui/icons-material/Check'
+import Clear from '@mui/icons-material/Clear'
+import Tune from '@mui/icons-material/Tune'
+import FormatSize from '@mui/icons-material/FormatSize'
+import Settings from '@mui/icons-material/Settings'
+import { Grid, IconButton, Typography } from '@mui/material'
 
 export default function MenuTile({ data, rowIndex, columnIndex, style }) {
   const [name, setName] = useState(true)
@@ -19,6 +19,7 @@ export default function MenuTile({ data, rowIndex, columnIndex, style }) {
     toggleSlotsMenu,
     Utility,
     standard,
+    Icons,
   } = data
 
   const item = tileItem[rowIndex * columnCount + columnIndex]
@@ -42,7 +43,29 @@ export default function MenuTile({ data, rowIndex, columnIndex, style }) {
     )
   }
 
-  const image = (
+  const image = item.id.startsWith('a') ? (
+    <div style={{ position: 'relative' }}>
+      <img
+        alt={item.url}
+        src={item.url}
+        style={{
+          maxHeight: isMobile ? 50 : 75,
+          maxWidth: isMobile ? 50 : 75,
+        }}
+      />
+      <img
+        alt="shadow"
+        style={{
+          height: isMobile ? 30 : 40,
+          width: isMobile ? 30 : 40,
+          position: 'absolute',
+          bottom: 0,
+          left: isMobile ? 'auto' : 0,
+        }}
+        src={Icons.getMisc('shadow')}
+      />
+    </div>
+  ) : (
     <img
       className="grid-item"
       alt={item.url}
@@ -55,18 +78,18 @@ export default function MenuTile({ data, rowIndex, columnIndex, style }) {
     />
   )
   const selection = (
-    <IconButton onClick={handleFilterChange}>
+    <IconButton onClick={handleFilterChange} size="large">
       {tempFilters[item.id]?.enabled ? (
-        <Check style={{ color: '#00e676' }} />
+        <Check color="success" />
       ) : (
-        <Clear color="primary" />
+        <Clear color="error" />
       )}
     </IconButton>
   )
 
   const getAdvMenuIcon = () => {
     if (type === 'pokemon') {
-      return <Tune style={{ color: 'white' }} />
+      return <Tune />
     }
     if (
       (type === 'pokestops' &&
@@ -74,9 +97,9 @@ export default function MenuTile({ data, rowIndex, columnIndex, style }) {
         !item.id.startsWith('i')) ||
       (item.id.startsWith('t') && parseInt(item.id.charAt(1)) > 0)
     ) {
-      return <Settings style={{ color: 'white' }} />
+      return <Settings />
     }
-    return <FormatSize style={{ color: 'white' }} />
+    return <FormatSize />
   }
   const advMenu = (
     <IconButton
@@ -85,6 +108,7 @@ export default function MenuTile({ data, rowIndex, columnIndex, style }) {
           ? toggleSlotsMenu(true, item.id.charAt(1))
           : toggleAdvMenu(true, item.id)
       }
+      size="large"
     >
       {getAdvMenuIcon()}
     </IconButton>

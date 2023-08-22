@@ -13,7 +13,7 @@ export const setWebhookStrategy = gql`
 `
 
 export const checkUsername = gql`
-  mutation SetUsername($username: String!) {
+  query CheckUsername($username: String!) {
     checkUsername(username: $username)
   }
 `
@@ -27,5 +27,43 @@ export const setGymBadge = gql`
 export const setExtraFields = gql`
   mutation SetExtraFields($key: String, $value: String) {
     setExtraFields(key: $key, value: $value)
+  }
+`
+
+export const getBackups = gql`
+  query GetBackups {
+    backups {
+      id
+      name
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const getFullBackup = gql`
+  query GetFullBackup($id: ID!) {
+    backup(id: $id) {
+      name
+      data
+    }
+  }
+`
+
+export const createBackup = gql`
+  mutation CreateBackup($backup: BackupCreate!) {
+    createBackup(backup: $backup)
+  }
+`
+
+export const updateBackup = gql`
+  mutation UpdateBackup($backup: BackupUpdate!) {
+    updateBackup(backup: $backup)
+  }
+`
+
+export const deleteBackup = gql`
+  mutation DeleteBackup($id: ID!) {
+    deleteBackup(id: $id)
   }
 `

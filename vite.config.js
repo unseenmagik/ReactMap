@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-disable no-console */
 /* eslint-disable no-continue */
 /* eslint-disable import/no-extraneous-dependencies */
 const { defineConfig, loadEnv } = require('vite')
@@ -9,7 +8,15 @@ const { viteStaticCopy } = require('vite-plugin-static-copy')
 const removeFiles = require('rollup-plugin-delete')
 const { resolve, extname } = require('path')
 const fs = require('fs')
+const { sentryVitePlugin } = require('@sentry/vite-plugin')
 
+const { log, HELPERS } = require('./server/src/services/logger')
+const { locales } = require('./locales/scripts/create')
+
+/**
+ * @param {boolean} isDevelopment
+ * @returns {import('vite').Plugin}
+ */
 const customFilePlugin = (isDevelopment) => {
   const fileRegex = /\.(jsx?|css)$/
   const customPaths = []
@@ -30,7 +37,7 @@ const customFilePlugin = (isDevelopment) => {
     },
     buildEnd() {
       if (customPaths.length && !isDevelopment) {
-        console.log(`
+        log.warn(`
 ======================================================
              WARNING:
 Custom files aren't officially supported
@@ -45,13 +52,24 @@ ${customPaths.map((x, i) => ` ${i + 1}. src/${x.split('src/')[1]}`).join('\n')}
   }
 }
 
-module.exports = defineConfig(({ mode }) => {
+/**
+ * @returns {import('vite').Plugin}
+ */
+const localePlugin = () => ({
+  name: 'vite-plugin-locales',
+  async buildStart() {
+    await locales()
+  },
+})
+
+const config = defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, resolve(process.cwd(), './'), '')
+  const isRelease = process.argv.includes('-r')
 
   const pkg = JSON.parse(
     fs.readFileSync(resolve(__dirname, 'package.json'), 'utf8'),
   )
-
+  const version = env.npm_package_version || pkg.version
   const hasCustom = (function checkFolders(folder, isCustom = false) {
     const files = fs.readdirSync(folder)
     for (let i = 0; i < files.length; i += 1) {
@@ -65,7 +83,7 @@ module.exports = defineConfig(({ mode }) => {
   })(resolve(__dirname, 'src'))
 
   if (mode === 'production') {
-    console.log(`[BUILD] Building production version: ${pkg.version}`)
+    log.info(HELPERS.build, `Building production version: ${version}`)
   }
 
   return {
@@ -97,7 +115,20 @@ module.exports = defineConfig(({ mode }) => {
           },
         ],
       }),
+      ...(process.env.SENTRY_AUTH_TOKEN &&
+      process.env.SENTRY_ORG &&
+      process.env.SENTRY_PROJECT
+        ? [
+            sentryVitePlugin({
+              org: process.env.SENTRY_ORG,
+              project: process.env.SENTRY_PROJECT,
+              authToken: process.env.SENTRY_AUTH_TOKEN,
+            }),
+          ]
+        : []),
+      localePlugin(),
     ],
+    optimizeDeps: mode === 'development' ? { exclude: ['@mui/*'] } : undefined,
     publicDir: 'public',
     resolve: {
       alias: {
@@ -115,10 +146,13 @@ module.exports = defineConfig(({ mode }) => {
         SENTRY_DSN: env.SENTRY_DSN || '',
         SENTRY_TRACES_SAMPLE_RATE: env.SENTRY_TRACES_SAMPLE_RATE || 0.1,
         SENTRY_DEBUG: env.SENTRY_DEBUG || false,
-        VERSION: env.npm_package_version || pkg.version,
+        VERSION: version,
         DEVELOPMENT: mode === 'development',
         CUSTOM: hasCustom,
-        LOCALES: fs.readdirSync(resolve(__dirname, 'public/locales')),
+        LOCALES: fs
+          .readdirSync(resolve(__dirname, './locales'))
+          .filter((x) => x.endsWith('.json'))
+          .map((x) => x.replace('.json', '')),
       }),
     },
     esbuild: {
@@ -127,19 +161,27 @@ module.exports = defineConfig(({ mode }) => {
     build: {
       target: ['safari11.1', 'chrome64', 'firefox66', 'edge88'],
       outDir: resolve(__dirname, './dist'),
-      sourcemap: mode === 'development',
+      sourcemap: mode === 'development' || isRelease,
       minify: mode === 'development' ? false : 'esbuild',
       input: { main: resolve(__dirname, 'index.html') },
       assetsDir: '',
       emptyOutDir: true,
+      chunkSizeWarningLimit: 2000,
       rollupOptions: {
         plugins: [
           // @ts-ignore
           removeFiles({
-            targets: ['dist/base-locales', 'dist/favicon'],
+            targets: ['dist/favicon'],
             hook: 'generateBundle',
           }),
         ],
+        output: {
+          manualChunks: (id) => {
+            if (id.endsWith('.css')) return 'index'
+            if (id.includes('node_modules')) return 'vendor'
+            if (id.includes('src')) return version.replaceAll('.', '-')
+          },
+        },
       },
     },
     server: {
@@ -169,3 +211,5 @@ module.exports = defineConfig(({ mode }) => {
     },
   }
 })
+
+module.exports = config

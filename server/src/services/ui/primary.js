@@ -89,9 +89,11 @@ const ignoredKeys = [
   'filter',
   'showQuestSet',
   'badge',
+  'backup',
   'avgFilter',
   'raidTier',
   'levels',
+  'confirmed',
 ]
 
 module.exports = function generateUi(filters, perms) {
@@ -123,7 +125,9 @@ module.exports = function generateUi(filters, perms) {
         if (
           (!ignoredKeys.includes(subKey) && subValue !== undefined) ||
           key === 'weather' ||
-          key === 'scanAreas'
+          key === 'scanAreas' ||
+          key === 'routes' ||
+          (key === 's2cells' && subKey !== 'filter')
         ) {
           switch (key) {
             case 'submissionCells':
@@ -136,6 +140,9 @@ module.exports = function generateUi(filters, perms) {
               ui.admin[key] = true
               break
             case 'scanAreas':
+              ui[key].filterByAreas = true
+            // eslint-disable-next-line no-fallthrough
+            case 'routes':
             case 'weather':
               ui[key].enabled = true
               break
@@ -176,5 +183,5 @@ module.exports = function generateUi(filters, perms) {
       sortedUi[category] = ui[category]
     }
   })
-  return sortedUi
+  return { ...sortedUi, ...ui }
 }

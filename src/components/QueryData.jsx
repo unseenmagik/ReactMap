@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { useQuery } from '@apollo/client'
+import RobustTimeout from '@services/apollo/RobustTimeout'
 
+import { useStatic } from '@hooks/useStore'
 import Query from '@services/Query'
 import Utility from '@services/Utility'
 
@@ -30,17 +32,20 @@ export default function QueryData({
   userIcons,
   setParams,
   timeOfDay,
-  setExcludeList,
   setError,
   active,
   onlyAreas,
 }) {
+  const timeout = useRef(
+    new RobustTimeout((config.polling[category] || 10) * 1000),
+  )
+
   const trimFilters = useCallback(
     (requestedFilters) => {
       const trimmed = {
-        onlyLegacyExclude: [],
         onlyLegacy: userSettings.legacyFilter,
         onlyLinkGlobal: userSettings.linkGlobalAndAdvanced,
+        onlyAllPvp: userSettings.showAllPvpRanks,
         onlyAreas,
       }
       Object.entries(requestedFilters).forEach((topLevelFilter) => {
@@ -61,8 +66,6 @@ export default function QueryData({
 
         if (specifics && specifics.enabled && staticFilters[id]) {
           trimmed[id] = specifics
-        } else if (userSettings.legacyFilter) {
-          trimmed.onlyLegacyExclude.push(id)
         }
       })
       return trimmed
@@ -70,21 +73,17 @@ export default function QueryData({
     [userSettings, filters, onlyAreas],
   )
 
-  const refetchData = () => {
-    onMove()
-    if (
-      category !== 'weather' &&
-      category !== 'device' &&
-      category !== 'scanAreas'
-    ) {
-      refetch({
-        ...Utility.getQueryArgs(map),
-        filters: trimFilters(filters),
-      })
-    }
-  }
-
   useEffect(() => {
+    const refetchData = () => {
+      onMove()
+      if (category !== 'scanAreas') {
+        timeout.current.doRefetch({
+          ...Utility.getQueryArgs(map),
+          filters: trimFilters(filters),
+        })
+      }
+    }
+
     map.on('moveend', refetchData)
     return () => {
       map.off('moveend', refetchData)
@@ -94,40 +93,35 @@ export default function QueryData({
   const { data, previousData, refetch, error } = useQuery(
     Query[category](filters, perms, map.getZoom(), clusteringRules.zoomLevel),
     {
-      context: { timeout: (config.polling[category] || 10) * 1000 },
+      context: {
+        abortableContext: timeout.current,
+      },
       variables: {
         ...bounds,
         filters: trimFilters(filters),
       },
       fetchPolicy: active ? 'cache-first' : 'cache-only',
-      pollInterval: (config.polling[category] || 10) * 1000,
       skip: !active,
     },
   )
 
-  useEffect(() => () => setExcludeList([]))
+  useEffect(() => {
+    if (active) {
+      timeout.current.setupTimeout(refetch)
+      return () => {
+        useStatic.setState({ excludeList: [] })
+        timeout.current.off()
+      }
+    }
+  }, [active])
 
   if (error) {
-    if (inject.DEVELOPMENT) {
-      return (
-        <Notification
-          severity="error"
-          i18nKey="server_dev_error_0"
-          messages={[
-            {
-              key: 'error',
-              variables: [error],
-            },
-          ]}
-        />
-      )
+    if (error.networkError?.statusCode === 464) {
+      setError('old_client')
+      return null
     }
-    const message =
-      error?.networkError?.result?.errors?.find(
-        (x) => x?.message === 'old_client',
-      )?.message || error?.message
-    if (message === 'session_expired' || message === 'old_client') {
-      setError(message)
+    if (error.networkError?.statusCode === 511) {
+      setError('session_expired')
       return null
     }
   }
@@ -163,6 +157,18 @@ export default function QueryData({
           zoom={config.activeWeatherZoom}
           clickable={userSettings.clickableIcon}
           map={map}
+        />
+      )}
+      {process.env.NODE_ENV === 'development' && error && (
+        <Notification
+          severity="error"
+          i18nKey="server_dev_error_0"
+          messages={[
+            {
+              key: 'error',
+              variables: [error?.message],
+            },
+          ]}
         />
       )}
     </>

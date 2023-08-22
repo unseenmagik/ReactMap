@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 import React, { Fragment, useState } from 'react'
-import { Dialog, DialogContent } from '@material-ui/core'
+import { Dialog, DialogContent } from '@mui/material'
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon'
 import { point, polygon } from '@turf/helpers'
 
@@ -21,7 +21,7 @@ export default function ActiveWeather({
   const location = useStore((state) => state.location)
   const [open, setOpen] = useState(false)
 
-  const { disableColorShift = false } = Icons.getModifiers('weather')
+  const [{ disableColorShift = false }] = Icons.getModifiers('weather')
   const active = weather.find(
     (cell) =>
       cell && booleanPointInPolygon(point(location), polygon([cell.polygon])),

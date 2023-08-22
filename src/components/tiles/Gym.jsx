@@ -106,6 +106,7 @@ const GymTile = ({
             Icons={Icons}
             badge={badge}
             setBadge={setBadge}
+            userSettings={userSettings}
           />
         </Popup>
         {(showTimer || userSettings.raidTimers) && hasRaid && (
@@ -122,6 +123,13 @@ const GymTile = ({
           <Circle
             center={[item.lat, item.lon]}
             radius={300}
+            pathOptions={{ color: getColor(item.team_id), weight: 0.5 }}
+          />
+        )}
+        {!!userSettings.customRange && zoom >= config.interactionRangeZoom && (
+          <Circle
+            center={[item.lat, item.lon]}
+            radius={userSettings.customRange}
             pathOptions={{ color: getColor(item.team_id), weight: 0.5 }}
           />
         )}

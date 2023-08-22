@@ -1,6 +1,6 @@
-/* eslint-disable no-console */
 const fs = require('fs')
 const { resolve } = require('path')
+const { log } = require('../src/services/logger')
 
 const oldConfig = JSON.parse(
   fs.readFileSync(resolve(__dirname, '../src/configs/config.json')),
@@ -125,7 +125,7 @@ const mergeAuth = async () => {
     )
   if (authMethods?.length) {
     authMethods = authMethods.map((file) => file.replace('.js', ''))
-    console.log(
+    log.info(
       'Found Custom Auth Methods:',
       authMethods,
       '\n',
@@ -153,6 +153,7 @@ const mergeAuth = async () => {
     allowedGuilds: obj?.allowedGuilds,
     blockedGuilds: obj?.blockedGuilds,
     allowedUsers: obj?.allowedUsers,
+    clientPrompt: obj?.clientPrompt,
   })
 
   const telegramObj = (obj, name) => ({
@@ -301,7 +302,7 @@ const mergeAuth = async () => {
     } else if (m.toLowerCase().includes('local')) {
       baseAuth.strategies.push(localObj(oldConfig[m], m))
     } else {
-      console.warn(
+      log.warn(
         'Unable to process Auth Method:',
         m,
         'you will need to manually migrate this!',
@@ -387,7 +388,7 @@ const cleanConfig = (obj, round) => {
         Object.values(value).every((v) => v === undefined)
       ) {
         delete obj[key]
-        console.log('Removed empty object:', key, round)
+        log.info('Removed empty object:', key, round)
       } else {
         cleanConfig(value, round)
       }
@@ -416,5 +417,5 @@ const migrator = async () => {
 module.exports.migrator = migrator
 
 if (require.main === module) {
-  migrator().then(() => console.log('Migrated Config'))
+  migrator().then(() => log.info('Migrated Config'))
 }

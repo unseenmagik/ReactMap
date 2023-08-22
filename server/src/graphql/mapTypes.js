@@ -1,4 +1,4 @@
-const { gql } = require('apollo-server-express')
+const gql = require('graphql-tag')
 
 module.exports = gql`
   type Available {
@@ -36,26 +36,20 @@ module.exports = gql`
     provider: String
   }
 
-  type Geometry {
-    type: String
-    coordinates: [[[Float]]]
-  }
-
-  type Feature {
-    type: String
-    properties: JSON
-    geometry: Geometry
+  type S2Cell {
+    id: String
+    coords: [[Float]]
   }
 
   type ScanArea {
     type: String
-    features: [Feature]
+    features: JSON
   }
 
   type ScanAreasMenu {
     name: String
-    details: Feature
-    children: [Feature]
+    details: JSON
+    children: JSON
   }
 
   type Search {
@@ -73,12 +67,24 @@ module.exports = gql`
     raid_pokemon_gender: Int
     raid_pokemon_costume: Int
     raid_pokemon_evolution: Int
+    raid_pokemon_alignment: Int
     pokemon_id: Int
     form: Int
     gender: Int
     costume: Int
     shiny: Int
     iv: Float
+  }
+
+  type SearchLure {
+    id: ID
+    name: String
+    url: String
+    lat: Float
+    lon: Float
+    distance: Float
+    lure_id: Int
+    lure_expire_timestamp: Int
   }
 
   type SearchQuest {
@@ -131,5 +137,25 @@ module.exports = gql`
   type SubmissionCell {
     placementCells: PlacementCell
     typeCells: [WayfarerCell]
+  }
+
+  type Backup {
+    id: ID
+    userId: ID
+    name: String
+    data: JSON
+    createdAt: Int
+    updatedAt: Int
+  }
+
+  input BackupCreate {
+    name: String
+    data: JSON
+  }
+
+  input BackupUpdate {
+    id: ID
+    name: String
+    data: JSON
   }
 `

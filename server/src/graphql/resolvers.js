@@ -1,19 +1,24 @@
-/* eslint-disable no-console */
+/* global BigInt */
 const GraphQLJSON = require('graphql-type-json')
-const { AuthenticationError, UserInputError } = require('apollo-server-core')
+const { S2LatLng, S2RegionCoverer, S2LatLngRect } = require('nodes2ts')
 
 const config = require('../services/config')
-const { User, Badge } = require('../models/index')
 const Utility = require('../services/Utility')
 const Fetch = require('../services/Fetch')
+const buildDefaultFilters = require('../services/filters/builder/base')
 
-module.exports = {
+/**
+ * @typedef {(parent: unknown, args: object, context: import('../types').GqlContext) => unknown} Resolver
+ * @type {{
+ *  JSON: typeof GraphQLJSON
+ *  Query: Record<string, Resolver>
+ *  Mutation: Record<string, Resolver>
+ * }}
+ */
+const resolvers = {
   JSON: GraphQLJSON,
   Query: {
-    available: (_, _args, { Event, Db, perms, serverV, clientV }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
+    available: (_, _args, { Event, Db, perms }) => {
       const available = {
         pokemon: perms.pokemon ? Event.available.pokemon : [],
         gyms: perms.gyms ? Event.available.gyms : [],
@@ -24,35 +29,43 @@ module.exports = {
       return {
         ...available,
         masterfile: { ...Event.masterfile, invasions: Event.invasions },
-        filters: Utility.buildDefaultFilters(perms, available, Db.models),
+        filters: buildDefaultFilters(perms, available, Db),
       }
     },
-    badges: async (_, _args, { req, perms, Db, serverV, clientV }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
-      if (perms?.gymBadges) {
-        const badges = await Badge.getAll(req.user?.id)
-        return Db.getAll('Gym', badges, {}, req.user?.id, 'getBadges')
+    backup: (_, args, { req, perms, Db }) => {
+      if (perms?.backups && req?.user?.id) {
+        return Db.models.Backup.getOne(args.id, req?.user?.id)
+      }
+      return {}
+    },
+    backups: (_, _args, { req, perms, Db }) => {
+      if (perms?.backups) {
+        return Db.models.Backup.getAll(req.user?.id)
       }
       return []
     },
-    devices: (_, args, { perms, Db, serverV, clientV }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    badges: async (_, _args, { req, perms, Db }) => {
+      if (perms?.gymBadges) {
+        const badges = await Db.query('Badge', 'getAll', req.user?.id)
+        const gyms = await Db.query('Gym', 'getBadges', badges)
+        return gyms
+      }
+      return []
+    },
+    checkUsername: async (_, args, { Db }) => {
+      const results = await Db.models.User.query().where(
+        'username',
+        args.username,
+      )
+      return !!results.length
+    },
+    devices: (_, args, { perms, Db }) => {
       if (perms?.devices) {
         return Db.getAll('Device', perms, args)
       }
       return []
     },
-    geocoder: (_, args, { perms, serverV, clientV, Event }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    geocoder: (_, args, { perms, Event }) => {
       if (perms?.webhooks) {
         const webhook = Event.webhookObj[args.name]
         if (webhook) {
@@ -61,51 +74,31 @@ module.exports = {
       }
       return []
     },
-    gyms: (_, args, { req, perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    gyms: (_, args, { req, perms, Db }) => {
       if (perms?.gyms || perms?.raids) {
         return Db.getAll('Gym', perms, args, req?.user?.id)
       }
       return []
     },
-    gymsSingle: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    gymsSingle: (_, args, { perms, Db }) => {
       if (perms?.[args.perm]) {
         return Db.getOne('Gym', args.id)
       }
       return {}
     },
-    nests: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    nests: (_, args, { perms, Db }) => {
       if (perms?.nests) {
         return Db.getAll('Nest', perms, args)
       }
       return []
     },
-    nestsSingle: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    nestsSingle: (_, args, { perms, Db }) => {
       if (perms?.[args.perm]) {
         return Db.getOne('Nest', args.id)
       }
       return {}
     },
-    pokestops: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    pokestops: (_, args, { perms, Db }) => {
       if (
         perms?.pokestops ||
         perms?.lures ||
@@ -116,78 +109,84 @@ module.exports = {
       }
       return []
     },
-    pokestopsSingle: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    pokestopsSingle: (_, args, { perms, Db }) => {
       if (perms?.[args.perm]) {
         return Db.getOne('Pokestop', args.id)
       }
       return {}
     },
-    pokemon: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    pokemon: (_, args, { perms, Db }) => {
       if (perms?.pokemon) {
         if (args.filters.onlyLegacy) {
-          return Db.getAll('Pokemon', perms, args, 0, 'getLegacy')
+          return Db.query('Pokemon', 'getLegacy', perms, args)
         }
-        return Db.getAll('Pokemon', perms, args)
+        return Db.query('Pokemon', 'getAll', perms, args)
       }
       return []
     },
-    pokemonSingle: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    pokemonSingle: (_, args, { perms, Db }) => {
       if (perms?.[args.perm]) {
         return Db.getOne('Pokemon', args.id)
       }
       return {}
     },
-    portals: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    portals: (_, args, { perms, Db }) => {
       if (perms?.portals) {
         return Db.getAll('Portal', perms, args)
       }
       return []
     },
-    portalsSingle: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    portalsSingle: (_, args, { perms, Db }) => {
       if (perms?.[args.perm]) {
         return Db.getOne('Portal', args.id)
       }
       return {}
     },
-    scanCells: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    route: (_, args, { perms, Db }) => {
+      if (perms?.routes) {
+        return Db.query('Route', 'getOne', args.id)
+      }
+      return {}
+    },
+    routes: (_, args, { perms, Db }) => {
+      if (perms?.routes) {
+        return Db.query('Route', 'getAll', perms, args)
+      }
+      return []
+    },
+    s2cells: (_, args, { perms }) => {
+      if (perms?.s2cells) {
+        const { onlyCells } = args.filters
+        return onlyCells.flatMap((level) => {
+          const regionCoverer = new S2RegionCoverer()
+          const region = S2LatLngRect.fromLatLng(
+            S2LatLng.fromDegrees(args.minLat, args.minLon),
+            S2LatLng.fromDegrees(args.maxLat, args.maxLon),
+          )
+          regionCoverer.setMinLevel(level)
+          regionCoverer.setMaxLevel(level)
+          return regionCoverer.getCoveringCells(region).map((cell) => {
+            const id = BigInt(cell.id).toString()
+            return {
+              id,
+              coords: Utility.getPolyVector(id).poly,
+            }
+          })
+        })
+      }
+      return []
+    },
+    scanCells: (_, args, { perms, Db }) => {
       if (perms?.scanCells && args.zoom >= config.map.scanCellsZoom) {
         return Db.getAll('ScanCell', perms, args)
       }
       return []
     },
-    scanAreas: (_, _args, { req, perms, serverV, clientV }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    scanAreas: (_, _args, { req, perms }) => {
       if (perms?.scanAreas) {
-        const scanAreas = config.scanAreas[req.headers.host]
-          ? config.scanAreas[req.headers.host]
-          : config.scanAreas.main
+        const scanAreas = config.areas.scanAreas[req.headers.host]
+          ? config.areas.scanAreas[req.headers.host]
+          : config.areas.scanAreas.main
         return [
           {
             ...scanAreas,
@@ -195,30 +194,29 @@ module.exports = {
               (feature) =>
                 !feature.properties.hidden &&
                 (!perms.areaRestrictions.length ||
-                  perms.areaRestrictions.includes(feature.properties.name)),
+                  perms.areaRestrictions.includes(feature.properties.name) ||
+                  perms.areaRestrictions.includes(feature.properties.parent)),
             ),
           },
         ]
       }
       return [{ features: [] }]
     },
-    scanAreasMenu: (_, _args, { req, perms, serverV, clientV }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    scanAreasMenu: (_, _args, { req, perms }) => {
       if (perms?.scanAreas) {
-        const scanAreas = config.scanAreasMenu[req.headers.host]
-          ? config.scanAreasMenu[req.headers.host]
-          : config.scanAreasMenu.main
+        const scanAreas = config.areas.scanAreasMenu[req.headers.host]
+          ? config.areas.scanAreasMenu[req.headers.host]
+          : config.areas.scanAreasMenu.main
 
         if (perms.areaRestrictions.length) {
           const filtered = scanAreas
             .map((parent) => ({
               ...parent,
-              children: parent.children.filter((child) =>
-                perms.areaRestrictions.includes(child.properties.name),
-              ),
+              children: perms.areaRestrictions.includes(parent.name)
+                ? parent.children
+                : parent.children.filter((child) =>
+                    perms.areaRestrictions.includes(child.properties.name),
+                  ),
             }))
             .filter((parent) => parent.children.length)
 
@@ -240,11 +238,7 @@ module.exports = {
       }
       return []
     },
-    search: async (_, args, { Event, perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    search: async (_, args, { Event, perms, Db }) => {
       const { category, webhookName, search } = args
       if (perms?.[category] && /^[0-9\s\p{L}]+$/u.test(search)) {
         if (!search || !search.trim()) {
@@ -285,11 +279,17 @@ module.exports = {
       }
       return []
     },
-    searchQuest: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    searchLure: (_, args, { perms, Db }) => {
+      const { category, search } = args
+      if (perms?.[category] && /^[0-9\s\p{L}]+$/u.test(search)) {
+        if (!search || !search.trim()) {
+          return []
+        }
+        return Db.search('Pokestop', perms, args, 'searchLures')
+      }
+      return []
+    },
+    searchQuest: (_, args, { perms, Db }) => {
       const { category, search } = args
       if (perms?.[category] && /^[0-9\s\p{L}]+$/u.test(search)) {
         if (!search || !search.trim()) {
@@ -299,21 +299,13 @@ module.exports = {
       }
       return []
     },
-    spawnpoints: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    spawnpoints: (_, args, { perms, Db }) => {
       if (perms?.spawnpoints) {
         return Db.getAll('Spawnpoint', perms, args)
       }
       return []
     },
-    submissionCells: async (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    submissionCells: async (_, args, { perms, Db }) => {
       if (
         perms?.submissionCells &&
         args.zoom >= config.map.submissionZoom - 1
@@ -333,21 +325,13 @@ module.exports = {
       }
       return [{ placementCells: [], typeCells: [] }]
     },
-    weather: (_, args, { perms, serverV, clientV, Db }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    weather: (_, args, { perms, Db }) => {
       if (perms?.weather) {
         return Db.getAll('Weather', perms, args)
       }
       return []
     },
-    webhook: (_, args, { req, perms, serverV, clientV }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    webhook: (_, args, { req, perms }) => {
       if (perms?.webhooks) {
         return Fetch.webhookApi(
           args.category,
@@ -358,11 +342,7 @@ module.exports = {
       }
       return {}
     },
-    scanner: (_, args, { req, perms, serverV, clientV }) => {
-      if (clientV && serverV && clientV !== serverV)
-        throw new UserInputError('old_client', { clientV, serverV })
-      if (!perms) throw new AuthenticationError('session_expired')
-
+    scanner: (_, args, { req, perms }) => {
       const { category, method, data } = args
       if (category === 'getQueue') {
         return Fetch.scannerApi(category, method, data, req?.user)
@@ -374,6 +354,38 @@ module.exports = {
     },
   },
   Mutation: {
+    createBackup: async (_, args, { req, perms, Db }) => {
+      if (perms?.backups && req.user?.id) {
+        await Db.models.Backup.create(args.backup, req.user.id)
+      }
+    },
+    deleteBackup: async (_, args, { req, perms, Db }) => {
+      if (perms?.backups && req.user?.id) {
+        await Db.models.Backup.delete(args.id, req.user.id)
+      }
+    },
+    updateBackup: async (_, args, { req, perms, Db }) => {
+      if (perms?.backups && req.user?.id) {
+        await Db.models.Backup.update(args.backup, req.user.id)
+      }
+    },
+    nestSubmission: async (_, args, { req, perms, Db, user }) => {
+      if (perms?.nestSubmissions && req.user?.id) {
+        return Db.query(
+          'NestSubmission',
+          'create',
+          {
+            name: args.name,
+            nest_id: args.id,
+          },
+          {
+            submitted_by: user,
+            user_id: req.user.id,
+          },
+        )
+      }
+      return false
+    },
     webhook: (_, args, { req }) => {
       const perms = req.user ? req.user.perms : false
       const { category, data, status, name } = args
@@ -388,9 +400,9 @@ module.exports = {
       }
       return {}
     },
-    tutorial: async (_, args, { req }) => {
+    tutorial: async (_, args, { req, Db }) => {
       if (req.user) {
-        await User.query()
+        await Db.models.User.query()
           .update({ tutorial: args.tutorial })
           .where('id', req.user.id)
         return true
@@ -401,22 +413,18 @@ module.exports = {
       }
       return false
     },
-    strategy: async (_, args, { req }) => {
+    strategy: async (_, args, { req, Db }) => {
       if (req.user) {
-        await User.query()
+        await Db.models.User.query()
           .update({ webhookStrategy: args.strategy })
           .where('id', req.user.id)
         return true
       }
       return false
     },
-    checkUsername: async (_, args) => {
-      const results = await User.query().where('username', args.username)
-      return Boolean(results.length)
-    },
-    setExtraFields: async (_, { key, value }, { req }) => {
+    setExtraFields: async (_, { key, value }, { req, Db }) => {
       if (req.user?.id) {
-        const user = await User.query().findById(req.user.id)
+        const user = await Db.models.User.query().findById(req.user.id)
         if (user) {
           const data =
             typeof user.data === 'string'
@@ -429,21 +437,21 @@ module.exports = {
       }
       return false
     },
-    setGymBadge: async (_, args, { req }) => {
+    setGymBadge: async (_, args, { req, Db }) => {
       const perms = req.user ? req.user.perms : false
       if (perms?.gymBadges && req?.user?.id) {
         if (
-          await Badge.query()
+          await Db.models.Badge.query()
             .where('gymId', args.gymId)
             .andWhere('userId', req.user.id)
             .first()
         ) {
-          await Badge.query()
+          await Db.models.Badge.query()
             .where('gymId', args.gymId)
             .andWhere('userId', req.user.id)
             .update({ badge: args.badge })
         } else {
-          await Badge.query().insert({
+          await Db.models.Badge.query().insert({
             badge: args.badge,
             gymId: args.gymId,
             userId: req.user.id,
@@ -455,3 +463,5 @@ module.exports = {
     },
   },
 }
+
+module.exports = resolvers

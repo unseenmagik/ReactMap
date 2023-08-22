@@ -1,12 +1,14 @@
-/* eslint-disable no-console */
 const { Model } = require('objection')
+
 const {
   database: {
     settings: { userTableName, gymBadgeTableName },
   },
 } = require('../services/config')
+const { log, HELPERS } = require('../services/logger')
 
-module.exports = class User extends Model {
+class User extends Model {
+  /** @returns {string} */
   static get tableName() {
     return userTableName
   }
@@ -16,24 +18,35 @@ module.exports = class User extends Model {
       .update({ [`${strategy}Perms`]: null })
       .where({ [`${strategy}Id`]: userId })
       .then(() =>
-        console.log(
-          `[${botName}] Cleared ${strategy} perms for user ${userId}`,
+        log.info(
+          HELPERS.custom(botName, '#fff2cc'),
+          `Cleared ${strategy} perms for user ${userId}`,
         ),
       )
   }
 
   static get relationMappings() {
     // eslint-disable-next-line global-require
-    const Badge = require('./Badge')
+    const { Db } = require('../services/initialization')
     return {
       badges: {
         relation: Model.HasManyRelation,
-        modelClass: Badge,
+        modelClass: Db.models.Badge,
         join: {
           from: `${userTableName}.id`,
           to: `${gymBadgeTableName}.userId`,
         },
       },
+      nestSubmissions: {
+        relation: Model.HasManyRelation,
+        modelClass: Db.models.NestSubmission,
+        join: {
+          from: `${userTableName}.id`,
+          to: `nest_submissions.userId`,
+        },
+      },
     }
   }
 }
+
+module.exports = User

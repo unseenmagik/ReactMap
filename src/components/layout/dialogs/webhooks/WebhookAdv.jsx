@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-no-duplicate-props */
 import React, { useState } from 'react'
-import ExpandMore from '@material-ui/icons/ExpandMore'
+import ExpandMore from '@mui/icons-material/ExpandMore'
 import {
   Grid,
   DialogContent,
@@ -18,13 +18,11 @@ import {
   AccordionDetails,
   Divider,
   CircularProgress,
-} from '@material-ui/core'
-
-import { Autocomplete } from '@material-ui/lab'
+  Autocomplete,
+} from '@mui/material'
 import { Trans, useTranslation } from 'react-i18next'
 import { useLazyQuery } from '@apollo/client'
 
-import useStyles from '@hooks/useStyles'
 import { useStore, useStatic } from '@hooks/useStore'
 
 import Query from '@services/Query'
@@ -80,7 +78,6 @@ export default function WebhookAdvanced({
 }) {
   const idObj = Poracle.getIdObj(id)
   const { t } = useTranslation()
-  const classes = useStyles()
   const location = useStore((state) => state.location)
   const selectedWebhook = useStore((s) => s.selectedWebhook)
   const webhookAdv = useStore((s) => s.webhookAdv)
@@ -420,6 +417,21 @@ export default function WebhookAdvanced({
   }
 
   const getPoracleString = () => {
+    if (!id) return ''
+    if (id === 'gold-stop')
+      return `${prefix}${t('invasion')} gold-stop ${Object.keys(poracleValues)
+        .map(checkDefaults)
+        .join(' ')}`
+    if (id === 'kecleon')
+      return `${prefix}${t('invasion')} ${t('poke_352')} ${Object.keys(
+        poracleValues,
+      )
+        .map(checkDefaults)
+        .join(' ')}`
+    if (id === 'showcase')
+      return `${prefix}${t('showcase')} ${Object.keys(poracleValues)
+        .map(checkDefaults)
+        .join(' ')}`
     switch (id.charAt(0)) {
       case 't':
         return `${prefix}${t('gym')}
@@ -484,6 +496,7 @@ export default function WebhookAdvanced({
   }
 
   const getDisabled = (option) => {
+    if (typeof option?.disabled === 'boolean') return option.disabled
     switch (option.name) {
       case 'xl':
       case 'xs':
@@ -532,7 +545,7 @@ export default function WebhookAdvanced({
             sm={option.sm || size}
             style={{ margin: '10px 0', textAlign: 'center' }}
           >
-            <FormControl variant="outlined" size="small">
+            <FormControl variant="outlined" size="small" sx={{ width: '80%' }}>
               <InputLabel>{t(option.name)}</InputLabel>
               <Select
                 autoFocus
@@ -680,8 +693,8 @@ export default function WebhookAdvanced({
                     }}
                   />
                 )}
-                renderOption={(x) => (
-                  <Grid container alignItems="center" spacing={1}>
+                renderOption={(props, x) => (
+                  <Grid container alignItems="center" spacing={1} {...props}>
                     <Grid item xs={12}>
                       <Typography variant="subtitle2">{x.name}</Typography>
                     </Grid>
@@ -731,7 +744,7 @@ export default function WebhookAdvanced({
         titles={Poracle.getTitles(idObj)}
         action={toggleWebhook(false, id)}
       />
-      <DialogContent style={{ color: 'white', padding: '8px 5px' }}>
+      <DialogContent style={{ padding: '8px 5px' }}>
         {Object.keys(info.ui).map((type) => {
           if (
             human.blocked_alerts &&
@@ -762,13 +775,8 @@ export default function WebhookAdvanced({
                   expanded={webhookAdv[type]}
                   onChange={handleChange(type)}
                 >
-                  <AccordionSummary
-                    expandIcon={<ExpandMore style={{ color: 'white' }} />}
-                    className={classes.accordionSummary}
-                  >
-                    <Typography className={classes.heading}>
-                      {t(type)}
-                    </Typography>
+                  <AccordionSummary expandIcon={<ExpandMore />}>
+                    <Typography>{t(type)}</Typography>
                   </AccordionSummary>
                   <AccordionDetails>{Items}</AccordionDetails>
                 </Accordion>

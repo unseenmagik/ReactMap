@@ -1,50 +1,87 @@
+// @ts-check
 import '@assets/css/main.css'
+import 'leaflet.locatecontrol/dist/L.Control.Locate.css'
+import 'leaflet/dist/leaflet.css'
 
-import React, { Suspense } from 'react'
+import * as React from 'react'
 import { BrowserRouter } from 'react-router-dom'
-
+import { CssBaseline, ThemeProvider } from '@mui/material'
 import { ApolloProvider } from '@apollo/client'
+
+import customTheme from '@assets/mui/theme'
+import { globalStyles } from '@assets/mui/global'
+import { useStore } from '@hooks/useStore'
 import client from '@services/apollo'
+import { isLocalStorageEnabled } from '@services/functions/isLocalStorageEnabled'
+import { setLoadingText } from '@services/functions/setLoadingText'
 
 import Config from './Config'
 import ErrorBoundary from './ErrorBoundary'
 
-const SetText = () => {
-  const locales = {
-    de: 'Übersetzungen werden geladen',
-    en: 'Loading Translations',
-    es: 'Cargando Traducciones',
-    fr: 'Chargement des traductions',
-    it: 'Caricamento Traduzioni',
-    ja: '翻訳を読み込み中',
-    ko: '번역 로드 중',
-    nl: 'Vertalingen worden geladen',
-    pl: 'Ładowanie tłumaczeń',
-    'pt-br': 'Carregando Traduções',
-    ru: 'Загрузка переводов',
-    sv: 'Laddar Översättningar',
-    th: 'กำลังโหลดการแปล',
-    tr: 'Çeviriler Yükleniyor',
-    'zh-tw': '載入翻譯',
-  }
+/**
+ * @type {Record<string, string>}
+ */
+const LOADING_LOCALES = {
+  de: 'Übersetzungen werden geladen',
+  en: 'Loading Translations',
+  es: 'Cargando Traducciones',
+  fr: 'Chargement des traductions',
+  it: 'Caricamento Traduzioni',
+  ja: '翻訳を読み込み中',
+  ko: '번역 로드 중',
+  nl: 'Vertalingen worden geladen',
+  pl: 'Ładowanie tłumaczeń',
+  'pt-br': 'Carregando Traduções',
+  ru: 'Загрузка переводов',
+  sv: 'Laddar Översättningar',
+  th: 'กำลังโหลดการแปล',
+  tr: 'Çeviriler Yükleniyor',
+  'zh-tw': '載入翻譯',
+}
+
+function SetText() {
   const locale = localStorage?.getItem('i18nextLng') || 'en'
-  const loadingText = document.getElementById('loading-text')
-  if (loadingText)
-    loadingText.innerText = locales[locale.toLowerCase()] || locales.en
+  setLoadingText(LOADING_LOCALES[locale.toLowerCase()] || LOADING_LOCALES.en)
   return <div />
 }
 
+/**
+ * @param {KeyboardEvent} event
+ */
+function toggleDarkMode(event) {
+  // This is mostly meant for development purposes
+  if (event.ctrlKey && event.key === 'd') {
+    useStore.setState((prev) => ({ darkMode: !prev.darkMode }))
+  }
+}
+
 export default function App() {
-  document.body.classList.add('dark')
-  return (
-    <Suspense fallback={<SetText />}>
-      <ApolloProvider client={client}>
-        <ErrorBoundary>
-          <BrowserRouter>
-            <Config />
-          </BrowserRouter>
-        </ErrorBoundary>
-      </ApolloProvider>
-    </Suspense>
-  )
+  const [theme, setTheme] = React.useState(customTheme())
+
+  React.useEffect(() => {
+    window.addEventListener('keydown', toggleDarkMode)
+    return () => window.removeEventListener('keydown', toggleDarkMode)
+  }, [])
+
+  const isValid = isLocalStorageEnabled()
+
+  if (!isValid) {
+    setLoadingText('Local storage is required to use this app!')
+  }
+
+  return isLocalStorageEnabled() ? (
+    <ThemeProvider theme={theme}>
+      <React.Suspense fallback={<SetText />}>
+        <CssBaseline />
+        {globalStyles}
+        <ApolloProvider client={client}>
+          <ErrorBoundary>
+            <BrowserRouter>
+              <Config setTheme={setTheme} />
+            </BrowserRouter>
+          </ErrorBoundary>
+        </ApolloProvider>
+      </React.Suspense>
+    </ThemeProvider>
+  ) : null
 }

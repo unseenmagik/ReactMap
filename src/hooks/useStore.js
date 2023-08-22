@@ -1,9 +1,19 @@
 import create from 'zustand'
 import { persist } from 'zustand/middleware'
 
+/**
+ * TODO: Finish this
+ * @typedef {{
+ *   darkMode: boolean,
+ *   location: [number, number],
+ *   popups: Record<string, boolean>,
+ * }} UseStore
+ * @type {import("zustand").UseBoundStore<import("zustand").StoreApi<UseStore>>}
+ */
 export const useStore = create(
   persist(
     (set, get) => ({
+      darkMode: !!window?.matchMedia('(prefers-color-scheme: dark)').matches,
       location: undefined,
       setLocation: (location) => set({ location }),
       zoom: undefined,
@@ -40,7 +50,7 @@ export const useStore = create(
           })
         }
       },
-      settings: undefined,
+      settings: {},
       setSettings: (settings) => set({ settings }),
       userSettings: undefined,
       setUserSettings: (userSettings) => set({ userSettings }),
@@ -83,6 +93,7 @@ export const useStore = create(
       setPopups: (popups) => set({ popups }),
       motdIndex: 0,
       setMotdIndex: (motdIndex) => set({ motdIndex }),
+      scannerCooldown: 0,
     }),
     {
       name: 'local-state',
@@ -92,6 +103,8 @@ export const useStore = create(
 )
 
 export const useStatic = create((set) => ({
+  isMobile: false,
+  isTablet: false,
   active: true,
   setActive: (active) => set({ active }),
   auth: {
@@ -109,6 +122,7 @@ export const useStatic = create((set) => ({
       webhooks: 0,
       scanner: 0,
     },
+    userBackupLimits: 0,
   },
   setAuth: (auth) => set({ auth }),
   config: undefined,
@@ -155,4 +169,8 @@ export const useStatic = create((set) => ({
   setResetFilters: (resetFilters) => set({ resetFilters }),
   extraUserFields: [],
   setExtraUserFields: (extraUserFields) => set({ extraUserFields }),
+}))
+
+export const useDialogStore = create((/* set, get */) => ({
+  nestSubmissions: '0',
 }))

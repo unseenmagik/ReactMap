@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
-import Visibility from '@material-ui/icons/Visibility'
-import VisibilityOff from '@material-ui/icons/VisibilityOff'
-import { Navigate } from 'react-router-dom'
+import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import {
   Grid,
   Typography,
@@ -11,19 +10,15 @@ import {
   FormControl,
   InputAdornment,
   IconButton,
-} from '@material-ui/core'
+} from '@mui/material'
 
 import { useTranslation } from 'react-i18next'
-import { useMutation } from '@apollo/client'
+import { useLazyQuery } from '@apollo/client'
 
 import Fetch from '@services/Fetch'
 import Query from '@services/Query'
 
-export default function LocalLogin({
-  href,
-  serverSettings,
-  getServerSettings,
-}) {
+export default function LocalLogin({ href }) {
   const { t } = useTranslation()
   const [user, setUser] = useState({
     username: '',
@@ -32,8 +27,7 @@ export default function LocalLogin({
   })
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [redirect, setRedirect] = useState(false)
-  const [checkUsername, { data }] = useMutation(Query.user('checkUsername'))
+  const [checkUsername, { data }] = useLazyQuery(Query.user('checkUsername'))
 
   const handleChange = (e) => {
     if (e.target.name === 'username') {
@@ -45,28 +39,23 @@ export default function LocalLogin({
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitted(true)
-    await Fetch.login(user, href).then(async (resp) => {
-      if (!resp.ok) {
-        setError(t(await resp.json()))
-      }
-      if (resp.redirected) {
-        await getServerSettings()
-        if (serverSettings.user.valid) {
-          setRedirect(true)
-        }
-      }
-    })
-  }
-
-  if (redirect) {
-    return <Navigate push to="/" />
+    const resp = await Fetch.login(user, href)
+    if (!resp.ok) {
+      setError(t('localauth_failed'))
+      setSubmitted(false)
+    } else if (resp.url.includes('invalid_credentials')) {
+      setError(t('invalid_credentials'))
+      setSubmitted(false)
+    } else {
+      window.location.replace('/')
+    }
   }
 
   return (
     <>
       <form onSubmit={handleSubmit}>
         <Grid container justifyContent="center" alignItems="center" spacing={2}>
-          <Grid item xs={12} sm={5} style={{ textAlign: 'center' }}>
+          <Grid item style={{ textAlign: 'center' }}>
             <FormControl variant="outlined" color="secondary">
               <InputLabel htmlFor="username">{t('local_username')}</InputLabel>
               <OutlinedInput
@@ -76,8 +65,8 @@ export default function LocalLogin({
                 value={user.username}
                 onChange={handleChange}
                 autoComplete="username"
+                label={t('local_username')}
                 color="secondary"
-                labelWidth={t('local_username').length * 9}
                 style={{ width: 250 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSubmit(e)
@@ -85,7 +74,7 @@ export default function LocalLogin({
               />
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={5} style={{ textAlign: 'center' }}>
+          <Grid item style={{ textAlign: 'center' }}>
             <FormControl variant="outlined" color="secondary">
               <InputLabel htmlFor="password">{t('local_password')}</InputLabel>
               <OutlinedInput
@@ -96,7 +85,7 @@ export default function LocalLogin({
                 onChange={handleChange}
                 autoComplete="current-password"
                 color="secondary"
-                labelWidth={t('local_password').length * 9}
+                label={t('local_password')}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSubmit(e)
                 }}
@@ -104,12 +93,12 @@ export default function LocalLogin({
                 endAdornment={
                   <InputAdornment position="end">
                     <IconButton
-                      style={{ color: 'white' }}
                       name="showPassword"
                       onClick={() =>
                         setUser({ ...user, showPassword: !user.showPassword })
                       }
                       onMouseDown={(e) => e.preventDefault()}
+                      size="large"
                     >
                       {user.showPassword ? <Visibility /> : <VisibilityOff />}
                     </IconButton>
@@ -118,11 +107,10 @@ export default function LocalLogin({
               />
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={2} style={{ textAlign: 'center' }}>
+          <Grid item style={{ textAlign: 'center' }}>
             <Button
               variant="contained"
               style={{
-                color: 'white',
                 textAlign: 'center',
               }}
               color="primary"

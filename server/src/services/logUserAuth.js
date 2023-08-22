@@ -1,6 +1,12 @@
-/* eslint-disable no-console */
-const fetch = require('node-fetch')
+// @ts-check
+const { default: fetch } = require('node-fetch')
+const { log, HELPERS } = require('./logger')
 
+/**
+ * Convert camelCase to Capitalized Words
+ * @param {string} str
+ * @returns
+ */
 const capCamel = (str) =>
   str
     .replace(/([a-z](?=[A-Z]))/g, '$1 ')
@@ -8,6 +14,11 @@ const capCamel = (str) =>
     .map((str2) => str2.charAt(0).toUpperCase() + str2.slice(1))
     .join(' ')
 
+/**
+ * Map permissions to a string
+ * @param {string[]} perms
+ * @param {import('../types').Permissions} userPerms
+ */
 const mapPerms = (perms, userPerms) =>
   perms
     .map(
@@ -15,12 +26,19 @@ const mapPerms = (perms, userPerms) =>
     )
     .join('\n')
 
-module.exports = async function getAuthInfo(req, user, strategy) {
+/**
+ * Log user authentication to Discord
+ * @param {import('express').Request} req
+ * @param {import('../types').User} user
+ * @param {string} strategy
+ * @returns
+ */
+async function getAuthInfo(req, user, strategy = 'custom') {
   const ip =
     req.headers['cf-connecting-ip'] ||
-    (req.headers['x-forwarded-for'] || '').split(', ')[0] ||
+    `${req.headers['x-forwarded-for'] || ''}`.split(', ')[0] ||
     (req.connection.remoteAddress || req.connection.localAddress).match(
-      '[0-9]+.[0-9].+[0-9]+.[0-9]+$',
+      /[0-9]+.[0-9].+[0-9]+.[0-9]+$/,
     )[0]
 
   const geo = await fetch(
@@ -28,7 +46,11 @@ module.exports = async function getAuthInfo(req, user, strategy) {
   )
     .then((res) => res.json())
     .catch((err) => {
-      console.warn('failed to fetch user information', err)
+      log.warn(
+        HELPERS.custom(strategy, '#7289da'),
+        'failed to fetch user information',
+        err,
+      )
       return {}
     })
 
@@ -72,17 +94,17 @@ module.exports = async function getAuthInfo(req, user, strategy) {
       },
       {
         name: 'Mobile',
-        value: `${Boolean(geo.mobile)}`,
+        value: `${!!geo.mobile}`,
         inline: true,
       },
       {
         name: 'Proxy',
-        value: `${Boolean(geo.proxy)}`,
+        value: `${!!geo.proxy}`,
         inline: true,
       },
       {
         name: 'Hosting',
-        value: `${Boolean(geo.hosting)}`,
+        value: `${!!geo.hosting}`,
         inline: true,
       },
       {
@@ -102,7 +124,7 @@ module.exports = async function getAuthInfo(req, user, strategy) {
       },
       {
         name: 'Wayfarer',
-        value: mapPerms(['portals', 'submissionCells'], user.perms),
+        value: mapPerms(['portals', 'submissionCells', 's2cells'], user.perms),
         inline: true,
       },
       {
@@ -115,7 +137,10 @@ module.exports = async function getAuthInfo(req, user, strategy) {
       },
       {
         name: 'Other',
-        value: mapPerms(['nests', 'weather', 'scanAreas', 'donor'], user.perms),
+        value: mapPerms(
+          ['nests', 'weather', 'scanAreas', 'donor', 'backups', 'routes'],
+          user.perms,
+        ),
         inline: true,
       },
     ],
@@ -150,19 +175,31 @@ module.exports = async function getAuthInfo(req, user, strategy) {
     })
   }
   if (user.valid) {
-    console.log(
-      '[DISCORD]',
+    log.info(
+      HELPERS.custom(strategy, '#7289da'),
       user.username,
       `(${user.id})`,
       'Authenticated successfully.',
     )
     embed.color = 0x00ff00
-  } else if (user.blocked) {
-    console.warn('[DISCORD]', user.id, 'Blocked due to', user.blocked)
-    embed.description = `User Blocked Due to ${user.blocked}`
+  } else if (user.perms?.blocked) {
+    const blockedGuilds = user.perms.blockedGuildNames.join(', ')
+    log.warn(
+      HELPERS.custom(strategy, '#7289da'),
+      user.id,
+      'Blocked due to',
+      blockedGuilds,
+    )
+    embed.description = `User Blocked Due to ${blockedGuilds}`
     embed.color = 0xff0000
   } else {
-    console.warn('[DISCORD]', user.id, 'Not authorized to access map')
+    log.warn(
+      HELPERS.custom(strategy, '#7289da'),
+      user.id,
+      'Not authorized to access map',
+    )
   }
   return embed
 }
+
+module.exports = getAuthInfo

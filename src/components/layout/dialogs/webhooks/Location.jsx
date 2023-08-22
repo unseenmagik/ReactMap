@@ -1,14 +1,14 @@
 import React, { useEffect, useCallback, memo } from 'react'
-import LocationOn from '@material-ui/icons/LocationOn'
-import MyLocation from '@material-ui/icons/MyLocation'
+import LocationOn from '@mui/icons-material/LocationOn'
+import MyLocation from '@mui/icons-material/MyLocation'
 import {
   Grid,
   Button,
   TextField,
   Typography,
   CircularProgress,
-} from '@material-ui/core'
-import { Autocomplete } from '@material-ui/lab'
+  Autocomplete,
+} from '@mui/material'
 
 import { useLazyQuery } from '@apollo/client'
 import { useMapEvents } from 'react-leaflet'
@@ -70,7 +70,7 @@ const Location = ({
 
   useEffect(() => () => lc.stop(), [])
 
-  const fetchedData = data || previousData
+  const fetchedData = data || previousData || { geocoder: [] }
 
   return (
     <Grid
@@ -115,7 +115,7 @@ const Location = ({
           style={{ width: '100%' }}
           getOptionLabel={(option) => Utility.formatter(addressFormat, option)}
           filterOptions={(x) => x}
-          options={fetchedData ? fetchedData.geocoder : []}
+          options={fetchedData.geocoder}
           autoComplete
           includeInputInList
           freeSolo
@@ -149,10 +149,10 @@ const Location = ({
               }}
             />
           )}
-          renderOption={(option) => (
-            <Grid container alignItems="center" spacing={1}>
+          renderOption={(props, option) => (
+            <Grid container alignItems="center" spacing={1} {...props}>
               <Grid item>
-                <LocationOn style={{ color: 'white' }} />
+                <LocationOn />
               </Grid>
               <Grid item xs>
                 <Typography variant="caption">

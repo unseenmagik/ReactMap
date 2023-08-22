@@ -58,6 +58,13 @@ const invasion = gql`
     invasions {
       incident_expire_timestamp
       grunt_type
+      confirmed
+      slot_1_pokemon_id
+      slot_1_form
+      slot_2_pokemon_id
+      slot_2_form
+      slot_3_pokemon_id
+      slot_3_form
     }
   }
 `
@@ -67,6 +74,20 @@ const event = gql`
     events {
       display_type
       event_expire_timestamp
+      showcase_pokemon_id
+      showcase_ranking_standard
+      showcase_rankings {
+        total_entries
+        last_update
+        contest_entries {
+          rank
+          pokemon_id
+          form
+          costume
+          gender
+          score
+        }
+      }
     }
   }
 `

@@ -1,26 +1,37 @@
-import React from 'react'
-import { Typography } from '@material-ui/core'
+import * as React from 'react'
+import { Typography } from '@mui/material'
 
 import { useStore } from '@hooks/useStore'
 
-export default function Title({ mainName, backup }) {
-  const popups = useStore((state) => state.popups)
-  const setPopups = useStore((state) => state.setPopups)
+/**
+ *
+ * @param {{
+ *  children: React.ReactNode,
+ *  backup?: string,
+ *  variant?: import('@mui/material/Typography').TypographyProps['variant'],
+ *  sx?: import('@mui/material').SxProps
+ * }} props
+ * @returns
+ */
+export default function Title({ children, variant = 'subtitle2', backup, sx }) {
+  const names = useStore((state) => !!state.popups.names)
 
-  const handleClick = () => {
-    setPopups({
-      ...popups,
-      names: !popups.names,
-    })
-  }
   return (
     <Typography
-      variant="subtitle2"
+      variant={variant}
       align="center"
-      noWrap={popups.names}
-      onClick={handleClick}
+      noWrap={names}
+      onClick={() =>
+        useStore.setState((prev) => ({
+          popups: {
+            ...prev.popups,
+            names: !prev.popups.names,
+          },
+        }))
+      }
+      sx={sx}
     >
-      {mainName || backup}
+      {children || backup}
     </Typography>
   )
 }

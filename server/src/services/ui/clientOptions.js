@@ -1,6 +1,12 @@
 const {
   clientSideOptions,
-  map: { enableMapJsFilter },
+  map: {
+    enableMapJsFilter,
+    enablePokemonPopupCoordsSelector,
+    enableGymPopupCoordsSelector,
+    enablePokestopPopupCoordsSelector,
+    enablePortalPopupCoordsSelector,
+  },
   api: {
     pvp: { levels },
   },
@@ -17,10 +23,20 @@ module.exports = function clientOptions(perms) {
       raidTimers: { type: 'bool', perm: ['raids'] },
       interactionRanges: { type: 'bool', perm: ['gyms', 'raids'] },
       '300mRange': { type: 'bool', perm: ['raids'] },
+      customRange: {
+        type: 'number',
+        perm: ['raids', 'gyms'],
+        min: 0,
+        max: 5000,
+      },
       showExBadge: { type: 'bool', perm: ['gyms'] },
       showArBadge: { type: 'bool', perm: ['gyms'] },
       raidLevelBadges: { type: 'bool', perm: ['raids'] },
       gymBadgeDiamonds: { type: 'bool', perm: ['gymBadges'] },
+      raidOpacity: { type: 'bool', perm: ['raids'] },
+      opacityTenMinutes: { type: 'number', perm: ['raids'] },
+      opacityFiveMinutes: { type: 'number', perm: ['raids'] },
+      opacityOneMinute: { type: 'number', perm: ['raids'] },
     },
     pokestops: {
       clustering: { type: 'bool', perm: ['pokestops', 'quests', 'invasions'] },
@@ -29,8 +45,18 @@ module.exports = function clientOptions(perms) {
       eventStopTimers: { type: 'bool', perm: ['pokestops'] },
       interactionRanges: { type: 'bool', perm: ['pokestops'] },
       lureRange: { type: 'bool', perm: ['lures'] },
+      customRange: {
+        type: 'number',
+        perm: ['raids', 'gyms'],
+        min: 0,
+        max: 5000,
+      },
       hasQuestIndicator: { type: 'bool', perm: ['quests'] },
       showArBadge: { type: 'bool', perm: ['pokestops'] },
+      invasionOpacity: { type: 'bool', perm: ['invasions'] },
+      opacityTenMinutes: { type: 'number', perm: ['invasions'] },
+      opacityFiveMinutes: { type: 'number', perm: ['invasions'] },
+      opacityOneMinute: { type: 'number', perm: ['invasions'] },
     },
     pokemon: {
       clustering: { type: 'bool', perm: ['pokemon'] },
@@ -38,11 +64,18 @@ module.exports = function clientOptions(perms) {
       pokemonTimers: { type: 'bool', perm: ['pokemon'] },
       ivCircles: { type: 'bool', perm: ['iv'] },
       minIvCircle: { type: 'number', perm: ['iv'], label: '%' },
+      levelCircles: { type: 'bool', perm: ['iv'] },
+      minLevelCircle: { type: 'number', perm: ['iv'] },
       interactionRanges: { type: 'bool', perm: ['pokemon'] },
       showDexNumInPopup: { type: 'bool', perm: ['pokemon'] },
       weatherIndicator: { type: 'bool', perm: ['pokemon'] },
-      pvpMega: { type: 'bool', perm: ['pokemon'] },
+      pvpMega: { type: 'bool', perm: ['pvp'] },
+      showAllPvpRanks: { type: 'bool', perm: ['pvp'] },
       showSizeIndicator: { type: 'bool', perm: ['pokemon'] },
+      pokemonOpacity: { type: 'bool', perm: ['pokemon'] },
+      opacityTenMinutes: { type: 'number', perm: ['pokemon'] },
+      opacityFiveMinutes: { type: 'number', perm: ['pokemon'] },
+      opacityOneMinute: { type: 'number', perm: ['pokemon'] },
     },
     wayfarer: {
       clustering: { type: 'bool', perm: ['portals'] },
@@ -55,6 +88,10 @@ module.exports = function clientOptions(perms) {
       darkMapBorder: { type: 'color', perm: ['submissionCells'] },
       cellBlocked: { type: 'color', perm: ['submissionCells'] },
       poiColor: { type: 'color', perm: ['submissionCells'] },
+    },
+    s2cells: {
+      lightMapBorder: { type: 'color', perm: ['s2cells'] },
+      darkMapBorder: { type: 'color', perm: ['s2cells'] },
     },
     scanAreas: {
       alwaysShowLabels: { type: 'bool', perm: ['scanAreas'] },
@@ -81,6 +118,30 @@ module.exports = function clientOptions(perms) {
   }
   if (clientSideOptions.pokemon.glow.length) {
     clientMenus.pokemon.glow = { type: 'bool', sub: {}, perm: ['pokemon'] }
+  }
+  if (enableGymPopupCoordsSelector) {
+    clientMenus.gyms.enableGymPopupCoords = {
+      type: 'bool',
+      perm: ['gyms'],
+    }
+  }
+  if (enablePokestopPopupCoordsSelector) {
+    clientMenus.pokestops.enablePokestopPopupCoords = {
+      type: 'bool',
+      perm: ['pokestops'],
+    }
+  }
+  if (enablePokemonPopupCoordsSelector) {
+    clientMenus.pokemon.enablePokemonPopupCoords = {
+      type: 'bool',
+      perm: ['pokemon'],
+    }
+  }
+  if (enablePortalPopupCoordsSelector) {
+    clientMenus.wayfarer.enablePortalPopupCoords = {
+      type: 'bool',
+      perm: ['portals'],
+    }
   }
 
   // only the keys & values are stored locally

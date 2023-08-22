@@ -1,5 +1,5 @@
 import React from 'react'
-import { ButtonGroup, Button } from '@material-ui/core'
+import { ButtonGroup, Button } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 export default function MultiSelector({
@@ -9,6 +9,7 @@ export default function MultiSelector({
   filterKey,
   items,
   tKey,
+  allowNone,
 }) {
   const { t } = useTranslation()
   const filterValue =
@@ -17,7 +18,7 @@ export default function MultiSelector({
       : filters
 
   return (
-    <ButtonGroup size="small">
+    <ButtonGroup size="small" sx={{ mx: 'auto' }}>
       {items.map((item) => (
         <Button
           key={item}
@@ -27,7 +28,8 @@ export default function MultiSelector({
                 ...filters,
                 [category]: {
                   ...filters[category],
-                  [filterKey]: item,
+                  [filterKey]:
+                    item === filterValue && allowNone ? 'none' : item,
                 },
               })
             } else {

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 const express = require('express')
 const fs = require('fs')
 const { resolve } = require('path')
@@ -8,33 +7,38 @@ const clientRouter = require('./clientRouter')
 const config = require('../services/config')
 const Utility = require('../services/Utility')
 const Fetch = require('../services/Fetch')
-const { User } = require('../models/index')
 const { Event, Db } = require('../services/initialization')
 const { version } = require('../../../package.json')
+const { log, HELPERS } = require('../services/logger')
+const buildDefaultFilters = require('../services/filters/builder/base')
 
-const rootRouter = new express.Router()
+const rootRouter = express.Router()
 
 rootRouter.use('/', clientRouter)
 
 rootRouter.use('/auth', authRouter)
 
 fs.readdir(resolve(__dirname, './api/v1/'), (e, files) => {
-  if (e) return console.error(e, 'Error initializing an API endpoint')
+  if (e) return log.error(HELPERS.api, 'Error initializing an API endpoint', e)
   files.forEach((file) => {
     try {
       rootRouter.use(
-        `/v1/${file.replace('.js', '')}`,
+        `/api/v1/${file.replace('.js', '')}`,
         require(resolve(__dirname, './api/v1/', file)),
       )
-      console.log(`[API] Loaded ${file}`)
+      log.info(HELPERS.api, `Loaded ${file}`)
     } catch (err) {
-      console.warn('[WARN] Unable to load API endpoint:', file, '\n', err)
+      log.warn(HELPERS.api, 'Unable to load API endpoint:', file, '\n', err)
     }
   })
 })
 
-rootRouter.post('/api/error/client', (req) => {
-  if (req.headers.version === version && req.isAuthenticated()) {
+rootRouter.get('/api/health', async (req, res) =>
+  res.status(200).json({ status: 'ok' }),
+)
+
+rootRouter.post('/api/error/client', (req, res) => {
+  if (req.headers.version === version) {
     const {
       body: { error },
       user,
@@ -44,17 +48,19 @@ rootRouter.post('/api/error/client', (req) => {
       user?.discordId ||
       user?.telegramId ||
       user?.id ||
-      'Unknown'
-    if (error && config.devOptions.clientErrors) {
-      console.error('[CLIENT]', error, `- User: ${userName}`)
+      'Not Logged In'
+    if (error) {
+      log.warn(HELPERS.client, `User: ${userName}`, error)
     }
+    return res.status(200).json({ status: 'ok' })
   }
+  return res.status(464).json({ status: 'invalid client version' })
 })
 
 rootRouter.get('/area/:area/:zoom?', (req, res) => {
   const { area, zoom } = req.params
   try {
-    const { scanAreas } = config
+    const { scanAreas } = config.areas
     const validScanAreas = scanAreas[req.headers.host]
       ? scanAreas[req.headers.host]
       : scanAreas.main
@@ -69,12 +75,12 @@ rootRouter.get('/area/:area/:zoom?', (req, res) => {
       return res.redirect('/404')
     }
   } catch (e) {
-    console.error(`[ERROR] Error navigating to ${area}`, e.message)
+    log.error(HELPERS.express, `Error navigating to ${area}`, e)
     res.redirect('/404')
   }
 })
 
-rootRouter.get('/api/settings', async (req, res) => {
+rootRouter.get('/api/settings', async (req, res, next) => {
   try {
     if (
       config.authentication.alwaysEnabledPerms.length ||
@@ -101,8 +107,9 @@ rootRouter.get('/api/settings', async (req, res) => {
         if (config.authentication.perms[perm]) {
           req.session.perms[perm] = true
         } else {
-          console.warn(
-            '[AUTH] Invalid Perm in "alwaysEnabledPerms" array:',
+          log.warn(
+            HELPERS.auth,
+            'Invalid Perm in "alwaysEnabledPerms" array:',
             perm,
           )
         }
@@ -113,7 +120,7 @@ rootRouter.get('/api/settings', async (req, res) => {
     const getUser = async () => {
       if (config.authMethods.length && req.user) {
         try {
-          const user = await User.query().findById(req.user.id)
+          const user = await Db.models.User.query().findById(req.user.id)
           if (user) {
             delete user.password
             return {
@@ -123,18 +130,19 @@ rootRouter.get('/api/settings', async (req, res) => {
               username: user.username || req.user.username,
             }
           }
-          console.log(
-            '[SESSION] Legacy user detected, forcing logout, User ID:',
+          log.info(
+            HELPERS.session,
+            'Legacy user detected, forcing logout, User ID:',
             req?.user?.id,
           )
-          req.logout()
+          req.logout(() => {})
           return { valid: false, tutorial: !config.map.forceTutorial }
         } catch (e) {
-          console.log(
-            '[SESSION] Issue finding user, forcing logout, User ID:',
+          log.info(
+            HELPERS.session,
+            'Issue finding user, User ID:',
             req?.user?.id,
           )
-          req.logout()
           return { valid: false, tutorial: !config.map.forceTutorial }
         }
       } else if (req.session.perms) {
@@ -146,6 +154,7 @@ rootRouter.get('/api/settings', async (req, res) => {
       user: await getUser(),
       settings: {},
       authMethods: config.authMethods,
+      userBackupLimits: config.database.settings.userBackupLimits,
       masterfile: { ...Event.masterfile, invasions: Event.invasions },
       config: {
         map: {
@@ -181,6 +190,7 @@ rootRouter.get('/api/settings', async (req, res) => {
           scanNextShowScanQueue: config.scanner.scanNext.showScanQueue,
           scanNextAreaRestriction:
             config.scanner.scanNext.scanNextAreaRestriction,
+          scanNextCooldown: config.scanner.scanNext.userCooldownSeconds,
           enableScanZone: config.scanner.scanZone.enabled,
           scanZoneShowScanCount: config.scanner.scanZone.showScanCount,
           scanZoneShowScanQueue: config.scanner.scanZone.showScanQueue,
@@ -191,6 +201,7 @@ rootRouter.get('/api/settings', async (req, res) => {
           scanZoneMaxSize: config.scanner.scanZone.scanZoneMaxSize,
           scanZoneAreaRestriction:
             config.scanner.scanZone.scanZoneAreaRestriction,
+          scanZoneCooldown: config.scanner.scanZone.userCooldownSeconds,
         },
         gymValidDataLimit:
           Date.now() / 1000 - config.api.gymValidDataLimit * 86400,
@@ -234,9 +245,10 @@ rootRouter.get('/api/settings', async (req, res) => {
             }
           }
         } catch (e) {
-          console.warn(
+          log.warn(
+            HELPERS.config,
             `Error setting ${setting}, most likely means there are no options set in the config`,
-            e.message,
+            e,
           )
         }
       })
@@ -278,10 +290,10 @@ rootRouter.get('/api/settings', async (req, res) => {
         }
       }
 
-      serverSettings.defaultFilters = Utility.buildDefaultFilters(
+      serverSettings.defaultFilters = buildDefaultFilters(
         serverSettings.user.perms,
         serverSettings.available,
-        Db.models,
+        Db,
       )
 
       // Backup in case there are Pokemon/Quests/Raids etc that are not in the masterfile
@@ -360,9 +372,9 @@ rootRouter.get('/api/settings', async (req, res) => {
           )
         } catch (e) {
           serverSettings.webhooks = null
-          console.warn(
-            '[AUTH]',
-            e.message,
+          log.warn(
+            HELPERS.auth,
+            e,
             'Unable to fetch webhook data, this is unlikely an issue with ReactMap, check to make sure the user is registered in the webhook database. User ID:',
             serverSettings.user.id,
           )
@@ -371,8 +383,8 @@ rootRouter.get('/api/settings', async (req, res) => {
     }
     res.status(200).json({ serverSettings })
   } catch (error) {
-    console.error(error)
     res.status(500).json({ error: error.message, status: 500 })
+    next(error)
   }
 })
 

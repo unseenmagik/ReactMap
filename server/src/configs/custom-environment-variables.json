@@ -19,10 +19,7 @@
       "__format": "boolean"
     },
     "clientPath": "DEV_OPTIONS_CLIENT_PATH",
-    "clientErrors": {
-      "__name": "DEV_OPTIONS_CLIENT_ERRORS",
-      "__format": "boolean"
-    }
+    "logLevel": "DEV_OPTIONS_LOG_LEVEL"
   },
   "api": {
     "sessionSecret": "API_SESSION_SECRET",
@@ -82,6 +79,10 @@
         "__name": "API_POLLING_PORTALS",
         "__format": "number"
       },
+      "routes": {
+        "__name": "API_POLLING_ROUTES",
+        "__format": "number"
+      },
       "scanAreas": {
         "__name": "API_POLLING_SCAN_AREAS",
         "__format": "number"
@@ -106,6 +107,10 @@
       },
       "pokestops": {
         "__name": "API_SEARCHABLE_POKESTOPS",
+        "__format": "boolean"
+      },
+      "lures": {
+        "__name": "API_SEARCHABLE_LURES",
         "__format": "boolean"
       },
       "raids": {
@@ -217,6 +222,10 @@
         "__format": "boolean"
       },
       "minCp": {
+        "little": {
+          "__name": "API_PVP_MIN_CP_LITTLE",
+          "__format": "number"
+        },
         "great": {
           "__name": "API_PVP_MIN_CP_GREAT",
           "__format": "number"
@@ -264,6 +273,9 @@
       "invasions": "API_POGO_API_ENDPOINTS_INVASIONS",
       "masterfile": "API_POGO_API_ENDPOINTS_MASTERFILE",
       "translations": "API_POGO_API_ENDPOINTS_TRANSLATIONS"
+    },
+    "kojiOptions": {
+      "bearerToken": "API_KOJI_OPTIONS_BEARER_TOKEN"
     }
   },
   "multiDomains": {
@@ -315,6 +327,10 @@
         "__format": "number"
       },
       "geoJsonFileName": "MAP_GENERAL_GEO_JSON_FILE_NAME",
+      "separateDrawerActions": {
+        "__name": "MAP_GENERAL_SEPARATE_DRAWER_ACTIONS",
+        "__format": "boolean"
+      },
       "attributionPrefix": "MAP_GENERAL_ATTRIBUTION_PREFIX",
       "menuOrder": {
         "__name": "MAP_GENERAL_MENU_ORDER",
@@ -333,6 +349,7 @@
     },
     "links": {
       "discordInvite": "MAP_LINKS_DISCORD_INVITE",
+      "discordLink": "MAP_LINKS_DISCORD_LINK",
       "feedbackLink": "MAP_LINKS_FEEDBACK_LINK",
       "statsLink": "MAP_LINKS_STATS_LINK",
       "rolesLinkName": "MAP_LINKS_ROLES_LINK_NAME",
@@ -385,6 +402,10 @@
         "__name": "MAP_MISC_ENABLE_QUEST_SET_SELECTOR",
         "__format": "boolean"
       },
+      "enableConfirmedInvasions": {
+        "__name": "MAP_MISC_ENABLE_CONFIRMED_INVASIONS",
+        "__format": "boolean"
+      },
       "noScanAreaOverlay": {
         "__name": "MAP_MISC_NO_SCAN_AREA_OVERLAY",
         "__format": "boolean"
@@ -402,7 +423,31 @@
         "__name": "MAP_MISC_CLIENT_TIMEOUT_MINUTES",
         "__format": "number"
       },
-      "distanceUnit": "MAP_MISC_DISTANCE_UNIT"
+      "distanceUnit": "MAP_MISC_DISTANCE_UNIT",
+      "enablePokemonPopupCoordsSelector": {
+        "__name": "MAP_MISC_ENABLE_POKEMON_POPUP_COORDS_SELECTOR",
+        "__format": "boolean"
+      },
+      "enableGymPopupCoordsSelector": {
+        "__name": "MAP_MISC_ENABLE_GYM_POPUP_COORDS_SELECTOR",
+        "__format": "boolean"
+      },
+      "enablePokestopPopupCoordsSelector": {
+        "__name": "MAP_MISC_ENABLE_POKESTOP_POPUP_COORDS_SELECTOR",
+        "__format": "boolean"
+      },
+      "enablePortalPopupCoordsSelector": {
+        "__name": "MAP_MISC_ENABLE_PORTAL_POPUP_COORDS_SELECTOR",
+        "__format": "boolean"
+      },
+      "customFloatingIcons": {
+        "__name": "MAP_MISC_CUSTOM_FLOATING_ICONS",
+        "__format": "json"
+      },
+      "expandAllScanAreas": {
+        "__name": "MAP_MISC_EXPAND_ALL_SCAN_AREAS",
+        "__format": "boolean"
+      }
     },
     "theme": {
       "style": "MAP_THEME_STYLE",
@@ -462,6 +507,7 @@
       }
     },
     "messageOfTheDay": {
+      "dialogMaxWidth": "MAP_MESSAGE_OF_THE_DAY_DIALOG_MAX_WIDTH",
       "index": {
         "__name": "MAP_MESSAGE_OF_THE_DAY_INDEX",
         "__format": "number"
@@ -485,6 +531,10 @@
         "donorOnly": {
           "__name": "MAP_MESSAGE_OF_THE_DAY_SETTINGS_DONOR_ONLY",
           "__format": "boolean"
+        },
+        "timeoutSeconds": {
+          "__name": "MAP_MESSAGE_OF_THE_DAY_SETTINGS_TIMEOUT_SECONDS",
+          "__format": "number"
         }
       },
       "titles": {
@@ -569,6 +619,10 @@
         "__name": "CLIENT_SIDE_OPTIONS_GYMS_300M_RANGE",
         "__format": "boolean"
       },
+      "customRange": {
+        "__name": "CLIENT_SIDE_OPTIONS_GYMS_CUSTOM_RANGE",
+        "__format": "number"
+      },
       "showExBadge": {
         "__name": "CLIENT_SIDE_OPTIONS_GYMS_SHOW_EX_BADGE",
         "__format": "boolean"
@@ -584,6 +638,26 @@
       "gymBadgeDiamonds": {
         "__name": "CLIENT_SIDE_OPTIONS_GYMS_GYM_BADGE_DIAMONDS",
         "__format": "boolean"
+      },
+      "enableGymPopupCoords": {
+        "__name": "CLIENT_SIDE_OPTIONS_GYMS_ENABLE_GYM_POPUP_COORDS",
+        "__format": "boolean"
+      },
+      "raidOpacity": {
+        "__name": "CLIENT_SIDE_OPTIONS_GYMS_RAID_OPACITY",
+        "__format": "boolean"
+      },
+      "opacityTenMinutes": {
+        "__name": "CLIENT_SIDE_OPTIONS_GYMS_OPACITY_TEN_MINUTES",
+        "__format": "number"
+      },
+      "opacityFiveMinutes": {
+        "__name": "CLIENT_SIDE_OPTIONS_GYMS_OPACITY_FIVE_MINUTES",
+        "__format": "number"
+      },
+      "opacityOneMinute": {
+        "__name": "CLIENT_SIDE_OPTIONS_GYMS_OPACITY_ONE_MINUTE",
+        "__format": "number"
       }
     },
     "pokestops": {
@@ -611,6 +685,10 @@
         "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_LURE_RANGE",
         "__format": "boolean"
       },
+      "customRange": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_CUSTOM_RANGE",
+        "__format": "number"
+      },
       "madQuestText": {
         "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_MAD_QUEST_TEXT",
         "__format": "boolean"
@@ -622,6 +700,26 @@
       "showArBadge": {
         "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_SHOW_AR_BADGE",
         "__format": "boolean"
+      },
+      "enablePokestopPopupCoords": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_ENABLE_POKESTOP_POPUP_COORDS",
+        "__format": "boolean"
+      },
+      "invasionOpacity": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_INVASION_OPACITY",
+        "__format": "boolean"
+      },
+      "opacityTenMinutes": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_OPACITY_TEN_MINUTES",
+        "__format": "number"
+      },
+      "opacityFiveMinutes": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_OPACITY_FIVE_MINUTES",
+        "__format": "number"
+      },
+      "opacityOneMinute": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKESTOPS_OPACITY_ONE_MINUTE",
+        "__format": "number"
       }
     },
     "pokemon": {
@@ -645,6 +743,14 @@
         "__name": "CLIENT_SIDE_OPTIONS_POKEMON_MIN_IV_CIRCLE",
         "__format": "number"
       },
+      "levelCircles": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKEMON_LEVEL_CIRCLES",
+        "__format": "boolean"
+      },
+      "minLevelCircle": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKEMON_MIN_LEVEL_CIRCLE",
+        "__format": "number"
+      },
       "weatherIndicator": {
         "__name": "CLIENT_SIDE_OPTIONS_POKEMON_WEATHER_INDICATOR",
         "__format": "boolean"
@@ -661,6 +767,10 @@
         "__name": "CLIENT_SIDE_OPTIONS_POKEMON_PVP_MEGA",
         "__format": "boolean"
       },
+      "showAllPvpRanks": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKEMON_SHOW_ALL_PVP_RANKS",
+        "__format": "boolean"
+      },
       "linkGlobalAndAdvanced": {
         "__name": "CLIENT_SIDE_OPTIONS_POKEMON_LINK_GLOBAL_AND_ADVANCED",
         "__format": "boolean"
@@ -669,9 +779,29 @@
         "__name": "CLIENT_SIDE_OPTIONS_POKEMON_SHOW_SIZE_INDICATOR",
         "__format": "boolean"
       },
+      "enablePokemonPopupCoords": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKEMON_ENABLE_POKEMON_POPUP_COORDS",
+        "__format": "boolean"
+      },
       "glow": {
         "__name": "CLIENT_SIDE_OPTIONS_POKEMON_GLOW",
         "__format": "json"
+      },
+      "pokemonOpacity": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKEMON_POKEMON_OPACITY",
+        "__format": "boolean"
+      },
+      "opacityTenMinutes": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKEMON_OPACITY_TEN_MINUTES",
+        "__format": "number"
+      },
+      "opacityFiveMinutes": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKEMON_OPACITY_FIVE_MINUTES",
+        "__format": "number"
+      },
+      "opacityOneMinute": {
+        "__name": "CLIENT_SIDE_OPTIONS_POKEMON_OPACITY_ONE_MINUTE",
+        "__format": "number"
       }
     },
     "wayfarer": {
@@ -687,7 +817,15 @@
       "lightMapBorder": "CLIENT_SIDE_OPTIONS_WAYFARER_LIGHT_MAP_BORDER",
       "darkMapBorder": "CLIENT_SIDE_OPTIONS_WAYFARER_DARK_MAP_BORDER",
       "cellBlocked": "CLIENT_SIDE_OPTIONS_WAYFARER_CELL_BLOCKED",
-      "poiColor": "CLIENT_SIDE_OPTIONS_WAYFARER_POI_COLOR"
+      "poiColor": "CLIENT_SIDE_OPTIONS_WAYFARER_POI_COLOR",
+      "enablePortalPopupCoords": {
+        "__name": "CLIENT_SIDE_OPTIONS_WAYFARER_ENABLE_PORTAL_POPUP_COORDS",
+        "__format": "boolean"
+      }
+    },
+    "s2cells": {
+      "darkMapBorder": "CLIENT_SIDE_OPTIONS_S2CELLS_DARK_MAP_BORDER",
+      "lightMapBorder": "CLIENT_SIDE_OPTIONS_S2CELLS_LIGHT_MAP_BORDER"
     },
     "scanAreas": {
       "alwaysShowLabels": {
@@ -807,6 +945,10 @@
         "__format": "boolean"
       },
       "questSet": "DEFAULT_FILTERS_POKESTOPS_QUEST_SET",
+      "confirmed": {
+        "__name": "DEFAULT_FILTERS_POKESTOPS_CONFIRMED",
+        "__format": "boolean"
+      },
       "items": {
         "__name": "DEFAULT_FILTERS_POKESTOPS_ITEMS",
         "__format": "boolean"
@@ -831,16 +973,16 @@
         "__name": "DEFAULT_FILTERS_POKESTOPS_ALL_INVASIONS",
         "__format": "boolean"
       },
+      "invasionPokemon": {
+        "__name": "DEFAULT_FILTERS_POKESTOPS_INVASION_POKEMON",
+        "__format": "boolean"
+      },
       "rewardTypes": {
         "__name": "DEFAULT_FILTERS_POKESTOPS_REWARD_TYPES",
         "__format": "boolean"
       },
       "baseMegaEnergyAmounts": {
         "__name": "DEFAULT_FILTERS_POKESTOPS_BASE_MEGA_ENERGY_AMOUNTS",
-        "__format": "json"
-      },
-      "baseLureIds": {
-        "__name": "DEFAULT_FILTERS_POKESTOPS_BASE_LURE_IDS",
         "__format": "json"
       },
       "stardust": {
@@ -893,14 +1035,6 @@
         "__name": "DEFAULT_FILTERS_POKEMON_ALL_POKEMON",
         "__format": "boolean"
       },
-      "xsRat": {
-        "__name": "DEFAULT_FILTERS_POKEMON_XS_RAT",
-        "__format": "boolean"
-      },
-      "xlKarp": {
-        "__name": "DEFAULT_FILTERS_POKEMON_XL_KARP",
-        "__format": "boolean"
-      },
       "globalValues": {
         "iv": {
           "__name": "DEFAULT_FILTERS_POKEMON_GLOBAL_VALUES_IV",
@@ -950,6 +1084,12 @@
         "__format": "boolean"
       }
     },
+    "routes": {
+      "enabled": {
+        "__name": "DEFAULT_FILTERS_ROUTES_ENABLED",
+        "__format": "boolean"
+      }
+    },
     "scanAreas": {
       "enabled": {
         "__name": "DEFAULT_FILTERS_SCAN_AREAS_ENABLED",
@@ -966,6 +1106,10 @@
       "enabled": {
         "__name": "DEFAULT_FILTERS_SPAWNPOINTS_ENABLED",
         "__format": "boolean"
+      },
+      "tth": {
+        "__name": "DEFAULT_FILTERS_SPAWNPOINTS_TTH",
+        "__format": "number"
       }
     },
     "submissionCells": {
@@ -986,6 +1130,16 @@
         "__format": "boolean"
       }
     },
+    "s2cells": {
+      "enabled": {
+        "__name": "DEFAULT_FILTERS_S2CELLS_ENABLED",
+        "__format": "boolean"
+      },
+      "cells": {
+        "__name": "DEFAULT_FILTERS_S2CELLS_CELLS",
+        "__format": "json"
+      }
+    },
     "weather": {
       "enabled": {
         "__name": "DEFAULT_FILTERS_WEATHER_ENABLED",
@@ -998,9 +1152,18 @@
       "userTableName": "DATABASE_SETTINGS_USER_TABLE_NAME",
       "gymBadgeTableName": "DATABASE_SETTINGS_GYM_BADGE_TABLE_NAME",
       "sessionTableName": "DATABASE_SETTINGS_SESSION_TABLE_NAME",
+      "backupTableName": "DATABASE_SETTINGS_BACKUP_TABLE_NAME",
       "migrationTableName": "DATABASE_SETTINGS_MIGRATION_TABLE_NAME",
       "maxConnections": {
         "__name": "DATABASE_SETTINGS_MAX_CONNECTIONS",
+        "__format": "number"
+      },
+      "userBackupLimits": {
+        "__name": "DATABASE_SETTINGS_USER_BACKUP_LIMITS",
+        "__format": "number"
+      },
+      "userBackupSizeLimit": {
+        "__name": "DATABASE_SETTINGS_USER_BACKUP_SIZE_LIMIT",
         "__format": "number"
       },
       "extraUserFields": {
@@ -1022,11 +1185,19 @@
       "queueRefreshInterval": {
         "__name": "SCANNER_BACKEND_CONFIG_QUEUE_REFRESH_INTERVAL",
         "__format": "number"
+      },
+      "sendDiscordMessage": {
+        "__name": "SCANNER_BACKEND_CONFIG_SEND_DISCORD_MESSAGE",
+        "__format": "boolean"
       }
     },
     "scanNext": {
       "enabled": {
         "__name": "SCANNER_SCAN_NEXT_ENABLED",
+        "__format": "boolean"
+      },
+      "trialPeriodEligible": {
+        "__name": "SCANNER_SCAN_NEXT_TRIAL_PERIOD_ELIGIBLE",
         "__format": "boolean"
       },
       "showScanCount": {
@@ -1043,12 +1214,20 @@
         "__name": "SCANNER_SCAN_NEXT_SCAN_NEXT_SLEEPTIME",
         "__format": "number"
       },
+      "userCooldownSeconds": {
+        "__name": "SCANNER_SCAN_NEXT_USER_COOLDOWN_SECONDS",
+        "__format": "number"
+      },
       "scanNextAreaRestriction": {
         "__name": "SCANNER_SCAN_NEXT_SCAN_NEXT_AREA_RESTRICTION",
         "__format": "json"
       },
       "discordRoles": {
         "__name": "SCANNER_SCAN_NEXT_DISCORD_ROLES",
+        "__format": "json"
+      },
+      "local": {
+        "__name": "SCANNER_SCAN_NEXT_LOCAL",
         "__format": "json"
       },
       "telegramGroups": {
@@ -1061,6 +1240,10 @@
         "__name": "SCANNER_SCAN_ZONE_ENABLED",
         "__format": "boolean"
       },
+      "trialPeriodEligible": {
+        "__name": "SCANNER_SCAN_ZONE_TRIAL_PERIOD_ELIGIBLE",
+        "__format": "boolean"
+      },
       "showScanCount": {
         "__name": "SCANNER_SCAN_ZONE_SHOW_SCAN_COUNT",
         "__format": "boolean"
@@ -1071,6 +1254,10 @@
       },
       "scanZoneMaxSize": {
         "__name": "SCANNER_SCAN_ZONE_SCAN_ZONE_MAX_SIZE",
+        "__format": "number"
+      },
+      "userCooldownSeconds": {
+        "__name": "SCANNER_SCAN_ZONE_USER_COOLDOWN_SECONDS",
         "__format": "number"
       },
       "advancedScanZoneOptions": {
@@ -1098,6 +1285,10 @@
       },
       "discordRoles": {
         "__name": "SCANNER_SCAN_ZONE_DISCORD_ROLES",
+        "__format": "json"
+      },
+      "local": {
+        "__name": "SCANNER_SCAN_ZONE_LOCAL",
         "__format": "json"
       },
       "telegramGroups": {
@@ -1131,10 +1322,18 @@
       "__name": "AUTHENTICATION_ALWAYS_ENABLED_PERMS",
       "__format": "json"
     },
+    "aliases": {
+      "__name": "AUTHENTICATION_ALIASES",
+      "__format": "json"
+    },
     "perms": {
       "map": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_MAP_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_MAP_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1147,6 +1346,10 @@
           "__name": "AUTHENTICATION_PERMS_POKEMON_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_POKEMON_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_POKEMON_ROLES",
           "__format": "json"
@@ -1155,6 +1358,10 @@
       "iv": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_IV_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_IV_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1167,6 +1374,10 @@
           "__name": "AUTHENTICATION_PERMS_PVP_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_PVP_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_PVP_ROLES",
           "__format": "json"
@@ -1175,6 +1386,10 @@
       "gyms": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_GYMS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_GYMS_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1187,6 +1402,10 @@
           "__name": "AUTHENTICATION_PERMS_RAIDS_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_RAIDS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_RAIDS_ROLES",
           "__format": "json"
@@ -1195,6 +1414,10 @@
       "pokestops": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_POKESTOPS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_POKESTOPS_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1207,6 +1430,10 @@
           "__name": "AUTHENTICATION_PERMS_EVENT_STOPS_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_EVENT_STOPS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_EVENT_STOPS_ROLES",
           "__format": "json"
@@ -1215,6 +1442,10 @@
       "quests": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_QUESTS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_QUESTS_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1227,6 +1458,10 @@
           "__name": "AUTHENTICATION_PERMS_LURES_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_LURES_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_LURES_ROLES",
           "__format": "json"
@@ -1235,6 +1470,10 @@
       "portals": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_PORTALS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_PORTALS_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1247,6 +1486,10 @@
           "__name": "AUTHENTICATION_PERMS_SUBMISSION_CELLS_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_SUBMISSION_CELLS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_SUBMISSION_CELLS_ROLES",
           "__format": "json"
@@ -1255,6 +1498,10 @@
       "invasions": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_INVASIONS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_INVASIONS_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1267,14 +1514,36 @@
           "__name": "AUTHENTICATION_PERMS_NESTS_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_NESTS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_NESTS_ROLES",
+          "__format": "json"
+        }
+      },
+      "nestSubmissions": {
+        "enabled": {
+          "__name": "AUTHENTICATION_PERMS_NEST_SUBMISSIONS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_NEST_SUBMISSIONS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
+        "roles": {
+          "__name": "AUTHENTICATION_PERMS_NEST_SUBMISSIONS_ROLES",
           "__format": "json"
         }
       },
       "scanAreas": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_SCAN_AREAS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_SCAN_AREAS_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1287,6 +1556,10 @@
           "__name": "AUTHENTICATION_PERMS_WEATHER_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_WEATHER_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_WEATHER_ROLES",
           "__format": "json"
@@ -1297,14 +1570,36 @@
           "__name": "AUTHENTICATION_PERMS_SPAWNPOINTS_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_SPAWNPOINTS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_SPAWNPOINTS_ROLES",
+          "__format": "json"
+        }
+      },
+      "s2cells": {
+        "enabled": {
+          "__name": "AUTHENTICATION_PERMS_S2CELLS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_S2CELLS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
+        "roles": {
+          "__name": "AUTHENTICATION_PERMS_S2CELLS_ROLES",
           "__format": "json"
         }
       },
       "scanCells": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_SCAN_CELLS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_SCAN_CELLS_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1317,6 +1612,10 @@
           "__name": "AUTHENTICATION_PERMS_DEVICES_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_DEVICES_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_DEVICES_ROLES",
           "__format": "json"
@@ -1325,6 +1624,10 @@
       "donor": {
         "enabled": {
           "__name": "AUTHENTICATION_PERMS_DONOR_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_DONOR_TRIAL_PERIOD_ELIGIBLE",
           "__format": "boolean"
         },
         "roles": {
@@ -1337,8 +1640,54 @@
           "__name": "AUTHENTICATION_PERMS_GYM_BADGES_ENABLED",
           "__format": "boolean"
         },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_GYM_BADGES_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
         "roles": {
           "__name": "AUTHENTICATION_PERMS_GYM_BADGES_ROLES",
+          "__format": "json"
+        }
+      },
+      "backups": {
+        "enabled": {
+          "__name": "AUTHENTICATION_PERMS_BACKUPS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_BACKUPS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
+        "roles": {
+          "__name": "AUTHENTICATION_PERMS_BACKUPS_ROLES",
+          "__format": "json"
+        }
+      },
+      "routes": {
+        "enabled": {
+          "__name": "AUTHENTICATION_PERMS_ROUTES_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_ROUTES_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
+        "roles": {
+          "__name": "AUTHENTICATION_PERMS_ROUTES_ROLES",
+          "__format": "json"
+        }
+      },
+      "showcaseRankings": {
+        "enabled": {
+          "__name": "AUTHENTICATION_PERMS_SHOWCASE_RANKINGS_ENABLED",
+          "__format": "boolean"
+        },
+        "trialPeriodEligible": {
+          "__name": "AUTHENTICATION_PERMS_SHOWCASE_RANKINGS_TRIAL_PERIOD_ELIGIBLE",
+          "__format": "boolean"
+        },
+        "roles": {
+          "__name": "AUTHENTICATION_PERMS_SHOWCASE_RANKINGS_ROLES",
           "__format": "json"
         }
       }

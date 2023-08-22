@@ -1,12 +1,12 @@
-const { gql } = require('apollo-server-express')
+const gql = require('graphql-tag')
 
 module.exports = gql`
   type Device {
     id: ID
     instance_name: String
     updated: Int
-    last_lat: Float
-    last_lon: Float
+    lat: Float
+    lon: Float
     type: String
     isMad: Boolean
     route: JSON
@@ -35,6 +35,7 @@ module.exports = gql`
     raid_pokemon_move_2: Int
     raid_pokemon_form: Int
     raid_pokemon_cp: Int
+    raid_pokemon_alignment: Int
     raid_is_exclusive: Boolean
     total_cp: Int
     first_seen_timestamp: Int
@@ -56,13 +57,13 @@ module.exports = gql`
     pokemon_id: Int
     updated: Int
     type: Int
-    nest_submitted_by: String
     name: String
     pokemon_count: Int
     pokemon_avg: Float
     pokemon_form: Int
     polygon_type: Int
     polygon_path: String
+    submitted_by: String
   }
 
   type Quest {
@@ -97,11 +98,36 @@ module.exports = gql`
   type Invasion {
     grunt_type: Int
     incident_expire_timestamp: Int
+    confirmed: Boolean
+    slot_1_pokemon_id: Int
+    slot_1_form: Int
+    slot_2_pokemon_id: Int
+    slot_2_form: Int
+    slot_3_pokemon_id: Int
+    slot_3_form: Int
+  }
+
+  type ShowcaseEntry {
+    rank: Int
+    pokemon_id: Int
+    form: Int
+    costume: Int
+    gender: Int
+    score: Float
+  }
+
+  type ShowcaseDetails {
+    total_entries: Int
+    last_update: Int
+    contest_entries: [ShowcaseEntry]
   }
 
   type Event {
     display_type: Int
     event_expire_timestamp: Int
+    showcase_pokemon_id: Int
+    showcase_rankings: ShowcaseDetails
+    showcase_ranking_standard: Int
   }
 
   type Pokestop {
@@ -213,5 +239,35 @@ module.exports = gql`
   type ScannerApi {
     status: String
     message: String
+  }
+
+  type Waypoint {
+    lat_degrees: Float
+    lng_degrees: Float
+    elevation_in_meters: Float
+  }
+
+  type Route {
+    id: ID
+    name: String
+    description: String
+    distance_meters: Int
+    duration_seconds: Int
+    start_fort_id: String
+    start_lat: Float
+    start_lon: Float
+    start_image: String
+    end_fort_id: String
+    end_lat: Float
+    end_lon: Float
+    end_image: String
+    image: String
+    image_border_color: String
+    reversible: Boolean
+    tags: [String]
+    type: Int
+    updated: Int
+    version: Int
+    waypoints: [Waypoint]
   }
 `

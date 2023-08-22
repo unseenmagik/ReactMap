@@ -7,13 +7,15 @@ import * as portalIndex from './queries/portal'
 import getAllWeather from './queries/weather'
 import getAllScanCells from './queries/scanCell'
 import getAllSubmissionCells from './queries/submissionCells'
-import { getOne, getAllNests } from './queries/nest'
+import { getOne, getAllNests, nestSubmission } from './queries/nest'
 import { getAllScanAreas, getScanAreasMenu } from './queries/scanAreas'
 import * as searchIndex from './queries/search'
 import * as webhookIndex from './queries/webhook'
 import scanner from './queries/scanner'
 import getGeocoder from './queries/geocoder'
 import * as user from './queries/user'
+import s2cell from './queries/s2cell'
+import { getRoute, getRoutes } from './queries/route'
 
 export default class Query {
   static devices() {
@@ -53,6 +55,9 @@ export default class Query {
   static nests(filters) {
     if (filters === 'id') {
       return getOne
+    }
+    if (filters === 'nestSubmission') {
+      return nestSubmission
     }
     return getAllNests
   }
@@ -129,6 +134,7 @@ export default class Query {
 
   static search(category) {
     switch (category) {
+      case 'lures':
       case 'raids':
       case 'nests':
       case 'quests':
@@ -155,5 +161,14 @@ export default class Query {
 
   static user(type) {
     return user[type]
+  }
+
+  static s2cells() {
+    return s2cell
+  }
+
+  static routes(method) {
+    if (method === 'getOne') return getRoute
+    return getRoutes
   }
 }

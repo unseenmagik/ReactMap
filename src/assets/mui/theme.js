@@ -1,83 +1,121 @@
-import { responsiveFontSizes } from '@material-ui/core'
-import { createTheme } from '@material-ui/core/styles'
+// @ts-check
+import { responsiveFontSizes } from '@mui/material'
+import { createTheme } from '@mui/material/styles'
+import * as locales from '@mui/material/locale'
 
-export default function setTheme(theme) {
-  return responsiveFontSizes(
-    createTheme({
+/** @type {import('@mui/material').Components<Omit<import('@mui/material').Theme, 'components'>>} */
+const components = {
+  MuiPaper: {
+    styleOverrides: {
+      root: {
+        backgroundImage: 'none',
+      },
+    },
+  },
+  MuiTabs: {
+    defaultProps: {
+      textColor: 'inherit',
+      indicatorColor: 'secondary',
+      variant: 'fullWidth',
+    },
+    styleOverrides: {
+      root: ({ theme: t }) => ({
+        backgroundColor: t.palette.grey[t.palette.mode === 'dark' ? 800 : 500],
+        width: '100%',
+      }),
+    },
+  },
+  MuiAccordion: {
+    defaultProps: {
+      disableGutters: true,
+    },
+    styleOverrides: {
+      root: {
+        '&.Mui-expanded:before': {
+          opacity: 1,
+        },
+      },
+    },
+  },
+  MuiSelect: {
+    defaultProps: {
+      size: 'small',
+    },
+  },
+  MuiAutocomplete: {
+    styleOverrides: {
+      inputRoot: {
+        paddingRight: `0px !important`,
+      },
+      paper: {
+        borderTopLeftRadius: 0,
+        borderTopRightRadius: 0,
+      },
+    },
+  },
+  MuiButtonBase: {
+    defaultProps: {
+      disableRipple: true,
+    },
+  },
+  MuiButton: {
+    defaultProps: {
+      disableRipple: true,
+    },
+  },
+  MuiDialogTitle: {
+    styleOverrides: {
+      root: {
+        padding: '12px 24px',
+      },
+    },
+  },
+  MuiDialogContent: {
+    styleOverrides: {
+      root: {
+        height: '100%',
+      },
+    },
+  },
+  MuiSlider: {
+    defaultProps: {
+      size: 'small',
+      valueLabelDisplay: 'auto',
+    },
+  },
+}
+
+const DEFAULT_PALETTE = {
+  primary: '#ff5722',
+  secondary: '#00b0ff',
+}
+
+/**
+ * @param {{ primary?: string, secondary?: string }} themeOptions
+ * @param {boolean} darkMode
+ * @param {keyof typeof locales} locale
+ * @returns
+ */
+export default function customTheme(
+  themeOptions = DEFAULT_PALETTE,
+  darkMode = document.body.classList.contains('dark'),
+  locale = 'enUS',
+) {
+  const newTheme = createTheme(
+    {
       palette: {
-        type: 'dark',
+        mode: darkMode ? 'dark' : 'light',
         primary: {
-          light: '#ff784e',
-          main: theme?.primary || '#ff5722',
-          dark: '#b23c17',
-          contrastText: '#fff',
+          main: themeOptions.primary,
         },
         secondary: {
-          light: '#33bfff',
-          main: theme?.secondary || '#00b0ff',
-          dark: '#007bb2',
+          main: themeOptions.secondary,
           contrastText: '#fff',
         },
-        action: {
-          main: '#00e676',
-          contrastText: '#fff',
-          active: '#00e676',
-        },
-        grey: {
-          light: '#bdbdbd',
-          main: '#333333',
-          dark: '#424242',
-          contrastText: '#fff',
-        },
-        background: {
-          paper: '#333333',
-          default: '#333333',
-        },
-        text: {
-          primary: '#f5f5f5',
-          secondary: 'white',
-          hint: '#a0a0a0',
-        },
       },
-      props: {
-        MuiButtonBase: {
-          disableRipple: true,
-        },
-      },
-      overrides: {
-        MuiDialogTitle: {
-          root: {
-            padding: '12px 24px',
-          },
-        },
-        MuiAccordion: {
-          root: {
-            '&$expanded': {
-              margin: '1px 0',
-            },
-          },
-        },
-        MuiAccordionSummary: {
-          root: {
-            '&$expanded': {
-              minHeight: 10,
-            },
-          },
-          content: {
-            '&$expanded': {
-              margin: '10px 0',
-            },
-          },
-        },
-        MuiSelect: {
-          icon: {
-            color: 'white',
-          },
-          iconOpen: {
-            color: 'white',
-          },
-        },
-      },
-    }),
+      components,
+    },
+    locales[locale],
   )
+  return responsiveFontSizes(newTheme)
 }

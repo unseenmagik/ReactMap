@@ -1,31 +1,32 @@
-import React, { Fragment, useCallback, useState, useEffect } from 'react'
-import Check from '@material-ui/icons/Check'
-import Clear from '@material-ui/icons/Clear'
-import ExpandMore from '@material-ui/icons/ExpandMore'
-import Map from '@material-ui/icons/Map'
-import MoreVert from '@material-ui/icons/MoreVert'
+/* eslint-disable no-nested-ternary */
+import React, { Fragment, useState, useEffect } from 'react'
+import Check from '@mui/icons-material/Check'
+import Clear from '@mui/icons-material/Clear'
+import ExpandMore from '@mui/icons-material/ExpandMore'
+import MoreVert from '@mui/icons-material/MoreVert'
 import {
   Grid,
   Avatar,
   Typography,
-  Icon,
   Collapse,
   IconButton,
   Divider,
   Menu,
   MenuItem,
   Tooltip,
-} from '@material-ui/core'
+} from '@mui/material'
 
 import { useTranslation } from 'react-i18next'
 
 import { useStore, useStatic } from '@hooks/useStore'
-import useStyles from '@hooks/useStyles'
 import Utility from '@services/Utility'
 import ErrorBoundary from '@components/ErrorBoundary'
 
 import GenericTimer from './common/Timer'
 import NameTT from './common/NameTT'
+import GenderIcon from './common/GenderIcon'
+import Navigation from './common/Navigation'
+import Coords from './common/Coords'
 
 const rowClass = { width: 30, fontWeight: 'bold' }
 
@@ -33,6 +34,21 @@ const leagueLookup = {
   great: '1500',
   ultra: '2500',
   master: '9000',
+}
+
+const getColor = (ivPercent) => {
+  switch (true) {
+    case ivPercent < 50:
+      return 'error.main'
+    case ivPercent < 80:
+      return 'warning.main'
+    case ivPercent < 100:
+      return 'info.main'
+    case ivPercent === 100:
+      return 'success.main'
+    default:
+      return 'text.primary'
+  }
 }
 
 export default function PokemonPopup({
@@ -44,7 +60,6 @@ export default function PokemonPopup({
   timeOfDay,
 }) {
   const { t } = useTranslation()
-  const classes = useStyles()
   const { pokemon_id, cleanPvp, iv, cp } = pokemon
   const { perms } = useStatic((state) => state.auth)
   const pokePerms = isTutorial
@@ -85,7 +100,6 @@ export default function PokemonPopup({
           t={t}
           perms={perms}
           userSettings={userSettings}
-          classes={classes}
           isTutorial={isTutorial}
         />
         {pokemon.seen_type !== 'encounter' && (
@@ -120,7 +134,6 @@ export default function PokemonPopup({
           popups={popups}
           setPopups={setPopups}
           hasPvp={!!hasLeagues.length}
-          classes={classes}
           Icons={Icons}
         />
         <Collapse in={popups.pvp && perms.pvp} timeout="auto" unmountOnExit>
@@ -136,7 +149,13 @@ export default function PokemonPopup({
           ))}
         </Collapse>
         <Collapse in={popups.extras} timeout="auto" unmountOnExit>
-          <ExtraInfo pokemon={pokemon} perms={pokePerms} t={t} Icons={Icons} />
+          <ExtraInfo
+            pokemon={pokemon}
+            perms={pokePerms}
+            userSettings={userSettings}
+            t={t}
+            Icons={Icons}
+          />
         </Collapse>
       </Grid>
     </ErrorBoundary>
@@ -149,7 +168,6 @@ const Header = ({
   t,
   iconUrl,
   userSettings,
-  classes,
   isTutorial,
 }) => {
   const hideList = useStatic((state) => state.hideList)
@@ -227,13 +245,7 @@ const Header = ({
     <>
       <Grid item xs={3}>
         {userSettings.showDexNumInPopup ? (
-          <Avatar
-            classes={{
-              colorDefault: classes.avatar,
-            }}
-          >
-            {metaData.pokedexId}
-          </Avatar>
+          <Avatar>{metaData.pokedexId}</Avatar>
         ) : (
           <img
             src={iconUrl}
@@ -255,8 +267,8 @@ const Header = ({
         )}
       </Grid>
       <Grid item xs={3}>
-        <IconButton aria-haspopup="true" onClick={handleClick}>
-          <MoreVert style={{ color: 'white' }} />
+        <IconButton aria-haspopup="true" onClick={handleClick} size="large">
+          <MoreVert />
         </IconButton>
       </Grid>
       <Menu
@@ -284,23 +296,6 @@ const Header = ({
 const Stats = ({ pokemon, t }) => {
   const { cp, iv, atk_iv, def_iv, sta_iv, level, inactive_stats } = pokemon
 
-  const getColor = useCallback(
-    (ivPercent) => {
-      const ivColors = {
-        0: 'red',
-        66: 'orange',
-        82: 'yellow',
-        100: '#00e676',
-      }
-      let color
-      Object.keys(ivColors).forEach((range) =>
-        ivPercent >= parseInt(range) ? (color = ivColors[range]) : '',
-      )
-      return color
-    },
-    [iv],
-  )
-
   return (
     <Grid
       item
@@ -312,11 +307,7 @@ const Stats = ({ pokemon, t }) => {
     >
       {iv !== null && (
         <Grid item>
-          <Typography
-            variant="h5"
-            align="center"
-            style={{ color: getColor(iv) }}
-          >
+          <Typography variant="h5" align="center" color={getColor(iv)}>
             {iv.toFixed(2)}
             {t('%')}
           </Typography>
@@ -367,13 +358,7 @@ const Info = ({ pokemon, metaData, perms, Icons, timeOfDay, t }) => {
       )}
       {!!gender && (
         <Grid item style={{ textAlign: 'center' }}>
-          <Icon>
-            {{
-              1: 'male',
-              2: 'female',
-              3: 'transgender',
-            }[gender] || ''}
-          </Icon>
+          <GenderIcon gender={gender} />
         </Grid>
       )}
       {!!size && Number.isInteger(size) && (
@@ -441,9 +426,9 @@ const Timer = ({ pokemon, hasStats, t }) => {
           enterTouchDelay={0}
         >
           {expire_timestamp_verified ? (
-            <Check fontSize="large" style={{ color: '#00e676' }} />
+            <Check fontSize="large" color="success" />
           ) : (
-            <Clear fontSize="large" color="primary" />
+            <Clear fontSize="large" color="error" />
           )}
         </Tooltip>
       </Grid>
@@ -451,15 +436,9 @@ const Timer = ({ pokemon, hasStats, t }) => {
   )
 }
 
-const Footer = ({ pokemon, popups, setPopups, hasPvp, classes, Icons }) => {
-  const { navigation } = useStore((state) => state.settings)
-  const {
-    navigation: {
-      [navigation]: { url },
-    },
-  } = useStatic((state) => state.config)
-
+const Footer = ({ pokemon, popups, setPopups, hasPvp, Icons }) => {
   const { lat, lon } = pokemon
+  const darkMode = useStore((s) => s.darkMode)
 
   const handleExpandClick = (category) => {
     const opposite = category === 'extras' ? 'pvp' : 'extras'
@@ -475,13 +454,14 @@ const Footer = ({ pokemon, popups, setPopups, hasPvp, classes, Icons }) => {
       {hasPvp && (
         <Grid item xs={4}>
           <IconButton
-            className={popups.pvp ? classes.expandOpen : classes.expand}
+            className={popups.pvp ? 'expanded' : 'closed'}
             name="pvp"
             onClick={() => handleExpandClick('pvp')}
-            aria-expanded={popups.pvp}
+            size="large"
           >
             <img
               alt="pvp"
+              className={darkMode ? '' : 'darken-image'}
               src={Icons.getMisc('pvp')}
               height={20}
               width="auto"
@@ -490,41 +470,31 @@ const Footer = ({ pokemon, popups, setPopups, hasPvp, classes, Icons }) => {
         </Grid>
       )}
       <Grid item xs={4} style={{ textAlign: 'center' }}>
-        <IconButton>
-          <a
-            href={url.replace('{x}', lat).replace('{y}', lon)}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: 'white' }}
-          >
-            <Map />
-          </a>
-        </IconButton>
+        <Navigation lat={lat} lon={lon} />
       </Grid>
       <Grid item xs={4}>
         <IconButton
-          className={popups.extras ? classes.expandOpen : classes.expand}
+          className={popups.extras ? 'expanded' : 'closed'}
           onClick={() => handleExpandClick('extras')}
-          aria-expanded={popups.extras}
+          size="large"
         >
-          <ExpandMore style={{ color: 'white' }} />
+          <ExpandMore />
         </IconButton>
       </Grid>
     </>
   )
 }
 
-const ExtraInfo = ({ pokemon, perms, t, Icons }) => {
+const ExtraInfo = ({ pokemon, perms, userSettings, t, Icons }) => {
   const { moves } = useStatic((state) => state.masterfile)
 
-  const { move_1, move_2, weight, height, first_seen_timestamp, updated, iv } =
-    pokemon
+  const { move_1, move_2, first_seen_timestamp, updated, iv } = pokemon
 
   return (
     <Grid container alignItems="center" justifyContent="center">
       {perms.iv &&
         iv !== null &&
-        [move_1, move_2].map((move, i) => {
+        [move_1, move_2].map((move) => {
           if (!move) return null
           return (
             <Fragment key={move}>
@@ -538,51 +508,62 @@ const ExtraInfo = ({ pokemon, perms, t, Icons }) => {
                   backgroundImage: `url(${Icons.getTypes(moves[move].type)})`,
                 }}
               />
-              <Grid item xs={6}>
+              <Grid item xs={4}>
                 <Typography variant="caption">{t(`move_${move}`)}</Typography>
               </Grid>
-              <Grid item xs={3} style={{ textAlign: 'right' }}>
+              {/* <Grid item xs={3} style={{ textAlign: 'right' }}>
                 <Typography variant="caption">
                   {i
                     ? `${weight ? weight.toFixed(2) : '? '}${t('kilogram')}`
                     : `${height ? height.toFixed(2) : '? '}${t('meter')}`}
                 </Typography>
-              </Grid>
+              </Grid> */}
             </Fragment>
           )
         })}
+      <Divider
+        flexItem
+        style={{ width: '100%', height: 2, margin: '10px 0' }}
+      />
       {[first_seen_timestamp, updated].map((time, i) =>
         time ? (
-          <Fragment key={`${time}-${i ? 'updated' : 'first'}`}>
-            <Grid
-              item
-              xs={t('popup_pokemon_description_width')}
-              style={{ textAlign: 'center' }}
-            >
-              <Typography variant="caption">
+          <Grid
+            container
+            item
+            xs={6}
+            key={`${time}-${i ? 'updated' : 'first'}`}
+            style={{ flexGrow: i ? 0 : 1, textAlign: 'center' }}
+            direction="column"
+          >
+            <Grid item>
+              <Typography variant="subtitle2">
                 {i ? t('last_seen') : t('first_seen')}:
               </Typography>
             </Grid>
-            <Grid
-              item
-              xs={t('popup_pokemon_seen_timer_width')}
-              style={{ textAlign: 'right' }}
-            >
-              <GenericTimer expireTime={time} />
-            </Grid>
-            <Grid
-              item
-              xs={t('popup_pokemon_data_width')}
-              style={{ textAlign: 'right' }}
-            >
+            <Grid item>
               <Typography variant="caption">
                 {new Date(time * 1000).toLocaleTimeString(
                   localStorage.getItem('i18nextLng') || 'en',
                 )}
               </Typography>
             </Grid>
-          </Fragment>
+            <Grid item>
+              <GenericTimer expireTime={time} />
+            </Grid>
+          </Grid>
         ) : null,
+      )}
+      {process.env.NODE_ENV === 'development' && (
+        <Grid item xs={12} style={{ paddingTop: 10 }}>
+          <Typography variant="subtitle1" align="center">
+            {pokemon.id}
+          </Typography>
+        </Grid>
+      )}
+      {userSettings.enablePokemonPopupCoords && (
+        <Grid item xs={12} style={{ textAlign: 'center' }}>
+          <Coords lat={pokemon.lat.toFixed(6)} lon={pokemon.lon.toFixed(6)} />
+        </Grid>
       )}
     </Grid>
   )
@@ -599,7 +580,11 @@ const PvpInfo = ({ pokemon, league, data, t, Icons }) => {
             img: (
               <NameTT
                 id={[
-                  each.form ? `form_${each.form}` : '',
+                  each.evolution
+                    ? `evo_${each.evolution}`
+                    : each.form
+                    ? `form_${each.form}`
+                    : '',
                   `poke_${each.pokemon}`,
                 ]}
               >
@@ -611,7 +596,7 @@ const PvpInfo = ({ pokemon, league, data, t, Icons }) => {
                     each.gender,
                     pokemon.costume,
                   )}
-                  height={20}
+                  style={{ maxWidth: 40, maxHeight: 20 }}
                   alt={t(`poke_${each.pokemon}`)}
                 />
               </NameTT>
@@ -633,7 +618,7 @@ const PvpInfo = ({ pokemon, league, data, t, Icons }) => {
         <tr>
           <td style={rowClass}>
             <img
-              src={Icons.getMisc(leagueLookup[league] || 500)}
+              src={Icons.getMisc(leagueLookup[league] || '500')}
               height={20}
               alt={league}
             />

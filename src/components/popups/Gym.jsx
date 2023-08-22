@@ -1,21 +1,18 @@
 import React, { Fragment, useState, useEffect } from 'react'
-import ExpandMore from '@material-ui/icons/ExpandMore'
-import Map from '@material-ui/icons/Map'
-import MoreVert from '@material-ui/icons/MoreVert'
+import ExpandMore from '@mui/icons-material/ExpandMore'
+import MoreVert from '@mui/icons-material/MoreVert'
 import {
   Grid,
   Typography,
-  Icon,
   Collapse,
   IconButton,
   Divider,
   Dialog,
-} from '@material-ui/core'
+} from '@mui/material'
 
 import { useTranslation, Trans } from 'react-i18next'
 
 import { useStore, useStatic } from '@hooks/useStore'
-import useStyles from '@hooks/useStyles'
 import useWebhook from '@hooks/useWebhook'
 import Utility from '@services/Utility'
 import ErrorBoundary from '@components/ErrorBoundary'
@@ -25,6 +22,9 @@ import Dropdown from './common/Dropdown'
 import GenericTimer from './common/Timer'
 import BadgeSelection from '../layout/dialogs/BadgeSelection'
 import PowerUp from './common/PowerUp'
+import GenderIcon from './common/GenderIcon'
+import Navigation from './common/Navigation'
+import Coords from './common/Coords'
 
 export default function GymPopup({
   gym,
@@ -34,6 +34,7 @@ export default function GymPopup({
   hasHatched,
   badge,
   setBadge,
+  userSettings,
 }) {
   const { t } = useTranslation()
   const { perms } = useStatic((state) => state.auth)
@@ -59,7 +60,7 @@ export default function GymPopup({
         spacing={1}
       >
         <Grid item xs={10}>
-          <Title mainName={gym.name} backup={t('unknown_gym')} />
+          <Title backup={t('unknown_gym')}>{gym.name}</Title>
         </Grid>
         <MenuActions
           gym={gym}
@@ -121,7 +122,7 @@ export default function GymPopup({
         />
         {perms.gyms && (
           <Collapse in={popups.extras} timeout="auto" unmountOnExit>
-            <ExtraInfo gym={gym} t={t} ts={ts} />
+            <ExtraInfo gym={gym} userSettings={userSettings} t={t} ts={ts} />
           </Collapse>
         )}
       </Grid>
@@ -129,7 +130,7 @@ export default function GymPopup({
   )
 }
 
-const MenuActions = ({ gym, perms, hasRaid, t, badge, setBadge }) => {
+const MenuActions = ({ gym, perms, hasRaid, badge, setBadge }) => {
   const hideList = useStatic((state) => state.hideList)
   const setHideList = useStatic((state) => state.setHideList)
   const excludeList = useStatic((state) => state.excludeList)
@@ -139,6 +140,7 @@ const MenuActions = ({ gym, perms, hasRaid, t, badge, setBadge }) => {
   const { gymValidDataLimit } = useStatic((state) => state.config)
 
   const selectedWebhook = useStore((state) => state.selectedWebhook)
+  const webhookData = useStatic((state) => state.webhookData)
 
   const filters = useStore((state) => state.filters)
   const setFilters = useStore((state) => state.setFilters)
@@ -147,6 +149,16 @@ const MenuActions = ({ gym, perms, hasRaid, t, badge, setBadge }) => {
   const [badgeMenu, setBadgeMenu] = useState(false)
 
   const addWebhook = useWebhook({ category: 'quickGym', selectedWebhook })
+  const hasGymHook = webhookData?.[selectedWebhook]?.gym?.find(
+    (x) => x.gym_id === gym.id,
+  )
+  const hasRaidHook = webhookData?.[selectedWebhook]?.raid?.find(
+    (x) => x.gym_id === gym.id,
+  )
+  const hasEggHook = webhookData?.[selectedWebhook]?.egg?.find(
+    (x) => x.gym_id === gym.id,
+  )
+  const hasWebhook = !!hasGymHook || !!hasRaidHook || !!hasEggHook
   const {
     id,
     team_id,
@@ -246,20 +258,27 @@ const MenuActions = ({ gym, perms, hasRaid, t, badge, setBadge }) => {
   perms.webhooks.forEach((hook) => {
     options.push({
       name: (
-        <Trans i18nKey="webhook_entry">
-          {{ category: t('gym') }}
+        <Trans i18nKey={hasWebhook ? 'remove_webhook_entry' : 'webhook_entry'}>
           {{ name: hook }}
         </Trans>
       ),
-      action: () => addWebhook(gym),
+      action: () => {
+        if (hasWebhook) {
+          if (hasGymHook) addWebhook(hasGymHook.uid, 'gym-delete')
+          if (hasRaidHook) addWebhook(hasRaidHook.uid, 'raid-delete')
+          if (hasEggHook) addWebhook(hasEggHook.uid, 'egg-delete')
+        } else {
+          addWebhook(gym, 'quickGym')
+        }
+      },
       key: hook,
     })
   })
 
   return (
     <Grid item xs={2} style={{ textAlign: 'right' }}>
-      <IconButton aria-haspopup="true" onClick={handleClick}>
-        <MoreVert style={{ color: 'white' }} />
+      <IconButton aria-haspopup="true" onClick={handleClick} size="large">
+        <MoreVert />
       </IconButton>
       <Dropdown
         anchorEl={anchorEl}
@@ -287,7 +306,11 @@ const PoiImage = ({ gym, Icons }) => {
       <img
         src={src}
         alt={name || 'unknown'}
-        className={`circle-image team-${team_id}`}
+        className={`${
+          gym.badge
+            ? `badge badge-${gym.badge}`
+            : `circle-image team-${team_id}`
+        }`}
         style={{
           maxHeight: 75,
           maxWidth: 75,
@@ -305,6 +328,7 @@ const RaidImage = ({ gym, ts, Icons, t }) => {
     raid_pokemon_gender,
     raid_pokemon_costume,
     raid_pokemon_evolution,
+    raid_pokemon_alignment,
     raid_battle_timestamp,
     raid_is_exclusive,
   } = gym
@@ -317,6 +341,7 @@ const RaidImage = ({ gym, ts, Icons, t }) => {
         raid_pokemon_evolution,
         raid_pokemon_gender,
         raid_pokemon_costume,
+        raid_pokemon_alignment,
       )
     : Icons.getEggs(raid_level, raid_battle_timestamp < ts, raid_is_exclusive)
 
@@ -362,9 +387,9 @@ const RaidImage = ({ gym, ts, Icons, t }) => {
             }}
           />
         ))}
-      {raid_pokemon_id > 0 && raid_pokemon_gender != 3 && (
+      {!!raid_pokemon_gender && (
         <Grid item xs={4} style={{ textAlign: 'center' }}>
-          <Icon>{raid_pokemon_gender === 1 ? 'male' : 'female'}</Icon>
+          <GenderIcon gender={raid_pokemon_gender} />
         </Grid>
       )}
     </Grid>
@@ -378,6 +403,7 @@ const GymInfo = ({ gym, t, Icons }) => {
     ex_raid_eligible,
     ar_scan_eligible,
     updated,
+    badge,
   } = gym
   const { gymValidDataLimit } = useStatic((state) => state.config)
 
@@ -390,6 +416,13 @@ const GymInfo = ({ gym, t, Icons }) => {
       justifyContent="space-around"
       alignItems="center"
     >
+      {!!badge && (
+        <Grid item xs={12}>
+          <Typography variant="h6" align="center" className={`badge_${badge}`}>
+            {t(`badge_${badge}`)}
+          </Typography>
+        </Grid>
+      )}
       {updated > gymValidDataLimit && (
           <Grid item xs={12}>
             <Typography variant="h6" align="center">
@@ -398,7 +431,7 @@ const GymInfo = ({ gym, t, Icons }) => {
           </Grid>
         ) && (
           <Grid item xs={12}>
-            <Typography variant="subtitle1" align="center">
+            <Typography variant="h6" align="center">
               {available_slots} {t('slots')}
             </Typography>
           </Grid>
@@ -406,25 +439,38 @@ const GymInfo = ({ gym, t, Icons }) => {
       {ex_raid_eligible && (
         <Grid
           item
-          xs={6}
+          xs={4}
           className="grid-item"
           style={{
             height: 24,
             backgroundImage: `url(${Icons.getMisc('ex')})`,
+            backgroundSize: 'contain',
           }}
         />
       )}
       {ar_scan_eligible && (
         <Grid
           item
-          xs={6}
+          xs={4}
           className="grid-item"
           style={{
             height: 24,
             backgroundImage: `url(${Icons.getMisc('ar')})`,
+            backgroundSize: 'contain',
           }}
         />
       )}
+      <Grid
+        item
+        xs={4}
+        style={{
+          background: `url(${Icons.getTeams(team_id)})`,
+          height: 24,
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+        }}
+      />
     </Grid>
   )
 }
@@ -435,9 +481,9 @@ const RaidInfo = ({ gym, t, Icons }) => {
     raid_level,
     raid_pokemon_id,
     raid_pokemon_form,
+    raid_pokemon_costume,
     raid_pokemon_move_1,
     raid_pokemon_move_2,
-    raid_pokemon_evolution,
   } = gym
 
   if (!raid_pokemon_id) {
@@ -451,9 +497,9 @@ const RaidInfo = ({ gym, t, Icons }) => {
     return `${t('tier')} ${raidLevel}`
   }
 
-  const getRaidForm = (id, form, evo) => {
-    if (evo) {
-      return t('mega')
+  const getRaidForm = (id, form, costume) => {
+    if (costume) {
+      return t(`costume_${costume}`, 'Unknown Costume')
     }
     if (form) {
       const raidForm = pokemon[id].forms[form].name
@@ -477,12 +523,12 @@ const RaidInfo = ({ gym, t, Icons }) => {
           {getRaidName(raid_level, raid_pokemon_id)}
         </Typography>
       </Grid>
-      <Grid item xs={12}>
-        <Typography variant="subtitle2" align="center">
+      <Grid item xs={12} style={{ paddingBottom: 4, textAlign: 'center' }}>
+        <Typography variant="caption" align="center">
           {getRaidForm(
             raid_pokemon_id,
             raid_pokemon_form,
-            raid_pokemon_evolution,
+            raid_pokemon_costume,
           )}
         </Typography>
       </Grid>
@@ -564,15 +610,8 @@ const Timer = ({ gym, start, t, hasHatched }) => {
 }
 
 const GymFooter = ({ gym, popups, setPopups, hasRaid, perms, Icons }) => {
-  const classes = useStyles()
-  const { navigation } = useStore((state) => state.settings)
-  const {
-    navigation: {
-      [navigation]: { url },
-    },
-  } = useStatic((state) => state.config)
   const { lat, lon } = gym
-
+  const darkMode = useStore((s) => s.darkMode)
   const handleExpandClick = (category) => {
     setPopups({
       ...popups,
@@ -584,14 +623,11 @@ const GymFooter = ({ gym, popups, setPopups, hasRaid, perms, Icons }) => {
     <>
       {hasRaid && perms.raids && perms.gyms && (
         <Grid item xs={4}>
-          <IconButton
-            className={classes.expand}
-            onClick={() => handleExpandClick('raids')}
-            aria-expanded={popups.raids}
-          >
+          <IconButton onClick={() => handleExpandClick('raids')} size="large">
             <img
               src={Icons.getMisc(popups.raids ? 'gyms' : 'raids')}
               alt={popups.raids ? 'gyms' : 'raids'}
+              className={darkMode ? '' : 'darken-image'}
               height={20}
               width="auto"
             />
@@ -599,22 +635,16 @@ const GymFooter = ({ gym, popups, setPopups, hasRaid, perms, Icons }) => {
         </Grid>
       )}
       <Grid item xs={4} style={{ textAlign: 'center' }}>
-        <IconButton
-          href={url.replace('{x}', lat).replace('{y}', lon)}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <Map style={{ color: 'white' }} />
-        </IconButton>
+        <Navigation lat={lat} lon={lon} />
       </Grid>
       {perms.gyms && (
         <Grid item xs={4}>
           <IconButton
-            className={popups.extras ? classes.expandOpen : classes.expand}
+            className={popups.extras ? 'expanded' : 'closed'}
             onClick={() => handleExpandClick('extras')}
-            aria-expanded={popups.extras}
+            size="large"
           >
-            <ExpandMore style={{ color: 'white' }} />
+            <ExpandMore />
           </IconButton>
         </Grid>
       )}
@@ -622,7 +652,7 @@ const GymFooter = ({ gym, popups, setPopups, hasRaid, perms, Icons }) => {
   )
 }
 
-const ExtraInfo = ({ gym, t, ts }) => {
+const ExtraInfo = ({ gym, userSettings, t, ts }) => {
   const { last_modified_timestamp, updated, total_cp, guarding_pokemon_id } =
     gym
   const { gymValidDataLimit } = useStatic((state) => state.config)
@@ -685,6 +715,11 @@ const ExtraInfo = ({ gym, t, ts }) => {
           </Grid>
         </Fragment>
       ))}
+      {userSettings.enableGymPopupCoords && (
+        <Grid item xs={12} style={{ textAlign: 'center' }}>
+          <Coords lat={gym.lat} lon={gym.lon} />
+        </Grid>
+      )}
     </Grid>
   )
 }

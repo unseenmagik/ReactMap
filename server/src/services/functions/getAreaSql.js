@@ -1,5 +1,5 @@
-const { authentication } = require('../config')
-const areas = require('../areas')
+const config = require('../config')
+const { consolidateAreas } = require('./consolidateAreas')
 
 module.exports = function getAreaRestrictionSql(
   query,
@@ -9,24 +9,17 @@ module.exports = function getAreaRestrictionSql(
   category,
 ) {
   if (
-    authentication.strictAreaRestrictions &&
-    authentication.areaRestrictions.length &&
+    config.authentication.strictAreaRestrictions &&
+    config.authentication.areaRestrictions.length &&
     !areaRestrictions.length
   )
     return false
 
   if (!areaRestrictions?.length && !onlyAreas?.length) return true
 
-  const cleanUserAreas = onlyAreas.filter((area) => areas.names.includes(area))
-  const consolidatedAreas = areaRestrictions.length
-    ? areaRestrictions
-        .filter(
-          (area) => !cleanUserAreas.length || cleanUserAreas.includes(area),
-        )
-        .flatMap((area) => areas.withoutParents[area] || area)
-    : cleanUserAreas
+  const consolidatedAreas = consolidateAreas(areaRestrictions, onlyAreas)
 
-  if (!consolidatedAreas.length) return false
+  if (!consolidatedAreas.size) return false
 
   let columns = ['lat', 'lon']
   if (isMad) {
@@ -40,17 +33,21 @@ module.exports = function getAreaRestrictionSql(
     }
   } else if (category === 'device') {
     columns = columns.map((each) => `last_${each}`)
-  }
-  if (category === 's2cell') {
+  } else if (category === 's2cell') {
     columns = columns.map((each) => `center_${each}`)
+  } else if (category === 'route_start') {
+    columns = columns.map((each) => `start_${each}`)
+  } else if (category === 'route_end') {
+    columns = columns.map((each) => `end_${each}`)
   }
 
   query.andWhere((restrictions) => {
     consolidatedAreas.forEach((area) => {
-      if (areas.polygons[area]) {
-        const polygon = areas.polygons[area].map((e) => e.join(' ')).join()
+      if (config.areas.polygons[area]) {
         restrictions.orWhereRaw(
-          `ST_CONTAINS(ST_GeomFromText("POLYGON((${polygon}))"), POINT(${columns[1]}, ${columns[0]}))`,
+          `ST_CONTAINS(ST_GeomFromGeoJSON('${JSON.stringify(
+            config.areas.polygons[area],
+          )}', 2, 0), POINT(${columns[1]}, ${columns[0]}))`,
         )
       }
     })

@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-props-no-spreading */
 import React from 'react'
-import { Grid } from '@material-ui/core'
+import { Grid } from '@mui/material'
 
 import Utility from '@services/Utility'
 
@@ -10,9 +10,14 @@ export default function CustomTile({
   block,
   defaultReturn,
   serverSettings = {},
-  getServerSettings = () => {},
 }) {
-  return (
+  return block.type === 'parent' ? (
+    <Generator
+      block={block}
+      defaultReturn={defaultReturn}
+      serverSettings={serverSettings}
+    />
+  ) : (
     <Grid
       item
       {...Utility.getSizes(block.gridSizes)}
@@ -22,7 +27,6 @@ export default function CustomTile({
         block={block}
         defaultReturn={defaultReturn}
         serverSettings={serverSettings}
-        getServerSettings={getServerSettings}
       />
     </Grid>
   )

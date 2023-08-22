@@ -6,9 +6,10 @@ import {
   OutlinedInput,
   InputAdornment,
   FormControl,
-} from '@material-ui/core'
+} from '@mui/material'
 import { Circle, Marker, Popup } from 'react-leaflet'
 import { useTranslation } from 'react-i18next'
+import fallbackIcon from '@components/markers/fallback'
 
 export default function DraggableMarker({
   map,
@@ -53,6 +54,7 @@ export default function DraggableMarker({
         eventHandlers={eventHandlers}
         position={position}
         ref={markerRef}
+        icon={fallbackIcon()}
       >
         <Popup minWidth={90} maxWidth={150} ref={popupRef}>
           <Grid
@@ -77,7 +79,6 @@ export default function DraggableMarker({
                   endAdornment={
                     <InputAdornment position="end">{t('m')}</InputAdornment>
                   }
-                  labelWidth={0}
                 />
               </FormControl>
               <Typography variant="caption">{t('distance_radius')}</Typography>

@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary */
 export default class Poracle {
   static filterGenerator = (poracleInfo, reactMapFilters, invasions) => {
     try {
@@ -40,6 +41,21 @@ export default class Poracle {
             grunt_type: 'everything',
             profile_no: human.current_profile_no,
           },
+          'gold-stop': {
+            ...invasion.defaults,
+            grunt_type: 'gold-stop',
+            profile_no: human.current_profile_no,
+          },
+          kecleon: {
+            ...invasion.defaults,
+            grunt_type: 'kecleon',
+            profile_no: human.current_profile_no,
+          },
+          showcase: {
+            ...invasion.defaults,
+            grunt_type: 'showcase',
+            profile_no: human.current_profile_no,
+          },
         },
         lure: {
           global: { ...lure.defaults, profile_no: human.current_profile_no },
@@ -51,7 +67,7 @@ export default class Poracle {
           global: { ...quest.defaults, profile_no: human.current_profile_no },
         },
       }
-      Object.keys(reactMapFilters.pokemon.filter).forEach((key) => {
+      Object.keys(reactMapFilters.pokemon?.filter || {}).forEach((key) => {
         filters.pokemon[key] = {
           ...pokemon.defaults,
           pokemon_id: +key.split('-')[0],
@@ -92,7 +108,7 @@ export default class Poracle {
           delete filters.quest[key].form
         }
       })
-      Object.keys(reactMapFilters.pokestops.filter).forEach((key) => {
+      Object.keys(reactMapFilters.pokestops?.filter || {}).forEach((key) => {
         if (key.startsWith('i')) {
           filters.invasion[key] = {
             ...invasion.defaults,
@@ -165,7 +181,7 @@ export default class Poracle {
           delete filters.quest[key].amount
         }
       })
-      Object.keys(reactMapFilters.gyms.filter).forEach((key) => {
+      Object.keys(reactMapFilters.gyms?.filter || {}).forEach((key) => {
         if (key.startsWith('r')) {
           filters.raid[key] = {
             ...raid.defaults,
@@ -251,12 +267,18 @@ export default class Poracle {
       case 'egg':
         return `e${item.level}`
       case 'invasion':
-        return `i${Object.keys(invasions).find(
-          (x) =>
-            invasions[x].type?.toLowerCase() ===
-              item.grunt_type.toLowerCase() &&
-            invasions[x].gender === (item.gender || 1),
-        )}`
+        return item.grunt_type === 'gold-stop'
+          ? 'gold-stop'
+          : item.grunt_type === 'kecleon'
+          ? 'kecleon'
+          : item.grunt_type === 'showcase'
+          ? 'showcase'
+          : `i${Object.keys(invasions).find(
+              (x) =>
+                invasions[x].type?.toLowerCase() ===
+                  item.grunt_type.toLowerCase() &&
+                invasions[x].gender === (item.gender || 1),
+            )}`
       case 'lure':
         return `l${item.lure_id}`
       case 'gym':
@@ -288,6 +310,10 @@ export default class Poracle {
   }
 
   static getIdObj(id) {
+    if (!id) return {}
+    if (id === 'gold-stop') return { id: 'gold-stop', type: 'invasion' }
+    if (id === 'kecleon') return { id: 'kecleon', type: 'invasion' }
+    if (id === 'showcase') return { id: 'showcase', type: 'invasion' }
     switch (id.charAt(0)) {
       case 'e':
         return { id: id.replace('e', ''), type: 'egg' }
@@ -319,6 +345,9 @@ export default class Poracle {
       case 'egg':
         return idObj.id === '90' ? ['poke_global'] : [`egg_${idObj.id}_plural`]
       case 'invasion':
+        if (idObj.id === 'gold-stop') return ['gold_stop']
+        if (idObj.id === 'kecleon') return ['poke_352']
+        if (idObj.id === 'showcase') return ['showcase']
         return idObj.id === '0' ? ['poke_global'] : [`grunt_a_${idObj.id}`]
       case 'lure':
         return [`lure_${idObj.id}`]
@@ -454,6 +483,8 @@ export default class Poracle {
               'gender',
               'rarity',
               'max_rarity',
+              'size',
+              'max_size',
             ]
             const newPokemon = {}
             if (pkmn.allForms) {

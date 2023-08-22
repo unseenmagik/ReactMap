@@ -1,6 +1,6 @@
-/* eslint-disable no-console */
 const Ohbem = require('ohbem')
 const NodeCache = require('node-cache')
+const { log, HELPERS } = require('./logger')
 
 module.exports = class PvpWrapper extends Ohbem {
   constructor(config) {
@@ -16,6 +16,11 @@ module.exports = class PvpWrapper extends Ohbem {
     })()
   }
 
+  /**
+   * @param {import("../types").Pokemon} pokemon
+   * @param {number} currentTs
+   * @returns {import("../types").CleanPvp}
+   */
   resultWithCache(pokemon, currentTs) {
     if (pokemon.pokemon_id === 132) return {}
 
@@ -35,12 +40,14 @@ module.exports = class PvpWrapper extends Ohbem {
       this.rmCache.set(key, result, pokemon.expire_timestamp - currentTs)
       return result
     } catch (e) {
-      console.error(
-        '[PKMN] Unable to process PVP Stats for Pokemon with ID#: ',
+      log.error(
+        HELPERS.pokemon,
+        'Unable to process PVP Stats for Pokemon with ID#: ',
         pokemon.id,
-        `#${pokemon.pokemon_id} - ${pokemon.form}`,
+        `${pokemon.pokemon_id}-${pokemon.form}`,
         '\n',
-        e.message,
+        e,
+        pokemon,
       )
       return {}
     }
