@@ -380,7 +380,6 @@
       "customRange": 0,
       "madQuestText": false,
       "hasQuestIndicator": true,
-      "showQuestDotBadge": true,
       "showArBadge": false,
       "enablePokestopPopupCoords": false,
       "invasionOpacity": true,

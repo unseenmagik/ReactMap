@@ -99,11 +99,6 @@ function clientOptions(perms) {
         perm: ['quests'],
         category: 'markers',
       },
-      showQuestDotBadge: {
-        type: 'bool',
-        perm: ['quests'],
-        category: 'markers',
-      },
       showArBadge: { type: 'bool', perm: ['pokestops'], category: 'markers' },
       invasionOpacity: {
         type: 'bool',

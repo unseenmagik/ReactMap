@@ -39,31 +39,27 @@ export function usePokestopMarker({
   )
 
   const getOpacity = useOpacity('pokestops', 'invasion')
-  const [showArBadge, showQuestDotBadge, baseIcon, baseSize] = useStorage(
-    (s) => {
-      const { filters, userSettings } = s
-      const pokestops = userSettings.pokestops || {}
-      return [
-        pokestops.showArBadge,
-        pokestops.showQuestDotBadge ?? true,
-        Icons.getPokestops(
-          hasLure ? lure_id : 0,
-          hasInvasion,
-          hasQuest && pokestops.hasQuestIndicator,
-          ar_scan_eligible && (pokestops.showArBadge || !!power_up_level),
-          power_up_level,
-          hasEvent ? Math.max(...events.map((event) => event.display_type)) : 0,
-        ),
-        hasLure
-          ? Icons.getSize(
-              'pokestop',
-              filters.pokestops.filter[`l${lure_id}`]?.size,
-            )
-          : Icons.getSize('pokestop', filters.pokestops.filter.s0?.size),
-      ]
-    },
-    basicEqualFn,
-  )
+  const [showArBadge, baseIcon, baseSize] = useStorage((s) => {
+    const { filters, userSettings } = s
+    const pokestops = userSettings.pokestops || {}
+    return [
+      pokestops.showArBadge,
+      Icons.getPokestops(
+        hasLure ? lure_id : 0,
+        hasInvasion,
+        hasQuest && pokestops.hasQuestIndicator,
+        ar_scan_eligible && (pokestops.showArBadge || !!power_up_level),
+        power_up_level,
+        hasEvent ? Math.max(...events.map((event) => event.display_type)) : 0,
+      ),
+      hasLure
+        ? Icons.getSize(
+            'pokestop',
+            filters.pokestops.filter[`l${lure_id}`]?.size,
+          )
+        : Icons.getSize('pokestop', filters.pokestops.filter.s0?.size),
+    ]
+  }, basicEqualFn)
   const filters = useStorage((s) => s.filters.pokestops.filter)
 
   const [invasionMod, pokestopMod, rewardMod, eventMod] = Icons.getModifiers(
@@ -273,7 +269,6 @@ export function usePokestopMarker({
         quest_background,
         key,
       } = quest
-      const showQuestDot = showQuestDotBadge
       let questIcon = { url: Icons.getRewards(quest_reward_type) }
       switch (quest_reward_type) {
         case 1:
@@ -352,7 +347,6 @@ export function usePokestopMarker({
       questIcons.unshift({
         ...questIcon,
         rewardType: quest_reward_type,
-        questDotColor: showQuestDot ? '#9e9e9e' : '',
       })
       questSizes.unshift(Icons.getSize('reward', filters[key]?.size))
       popupYOffset += rewardMod.offsetY - 1
@@ -412,7 +406,6 @@ export function usePokestopMarker({
       amount: icon.amount,
       rewardType: icon.rewardType,
       backgroundUrl: icon.backgroundUrl,
-      questDotColor: icon.questDotColor,
     })
   })
 
@@ -465,15 +458,6 @@ export function usePokestopMarker({
                 />
               `
           : ''
-      const questDotHtml =
-        item.type === 'quest' && item.questDotColor
-          ? `
-                <span
-                  class="pokestop-marker__quest-dot"
-                  style="background-color: ${item.questDotColor};"
-                ></span>
-              `
-          : ''
       const backgroundStyle = item.backgroundUrl
         ? `
                 background-image: url(${item.backgroundUrl});
@@ -507,7 +491,6 @@ export function usePokestopMarker({
                 style="${opacityStyle}"
               />
               ${amountHtml}
-              ${questDotHtml}
               ${decorationHtml}
             </div>
       `
