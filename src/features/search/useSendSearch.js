@@ -46,10 +46,7 @@ export function useSendSearch(search, open) {
             (filters?.scanAreas?.filterByAreas &&
               filters?.scanAreas?.filter?.areas) ||
             [],
-          questLayer:
-            searchTab === 'quests'
-              ? filters?.pokestops?.showQuestSet || ''
-              : undefined,
+          questLayer: searchTab === 'quests' ? 'without_ar' : undefined,
         },
       })
     },

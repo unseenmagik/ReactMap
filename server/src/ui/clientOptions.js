@@ -99,12 +99,7 @@ function clientOptions(perms) {
         perm: ['quests'],
         category: 'markers',
       },
-      showArQuestDotBadge: {
-        type: 'bool',
-        perm: ['quests'],
-        category: 'markers',
-      },
-      showNoArQuestDotBadge: {
+      showQuestDotBadge: {
         type: 'bool',
         perm: ['quests'],
         category: 'markers',

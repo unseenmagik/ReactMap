@@ -883,12 +883,7 @@ class Pokestop extends Model {
       if (perms.quests && (filters.onlyAllPokestops || filters.onlyQuests)) {
         filtered.quests = []
         pokestop.quests.forEach((quest) => {
-          if (
-            quest.quest_reward_type &&
-            (filters.onlyShowQuestSet === 'both' ||
-              (filters.onlyShowQuestSet === 'with_ar' && quest.with_ar) ||
-              (filters.onlyShowQuestSet === 'without_ar' && !quest.with_ar))
-          ) {
+          if (quest.quest_reward_type && !quest.with_ar) {
             const newQuest = {}
             if (isMad) {
               this.parseMadRewards(quest)

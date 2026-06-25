@@ -506,12 +506,10 @@ const MenuActions = ({
 
 /**
  *
- * @param {{
- *  with_ar: boolean
- * } & Omit<import('@rm/types').Quest, 'key'>} props
+ * @param {Omit<import('@rm/types').Quest, 'key'>} props
  * @returns
  */
-const RewardInfo = ({ with_ar, ...quest }) => {
+const RewardInfo = ({ ...quest }) => {
   const { t } = useTranslation()
   const { src, amount, tt } = getRewardInfo(quest)
   const questMessage = useMemory((s) => s.config.misc.questMessage)
@@ -568,9 +566,11 @@ const RewardInfo = ({ with_ar, ...quest }) => {
           x{amount}
         </div>
       )}
-      <Typography variant="caption" className="ar-task" noWrap>
-        {questMessage || t(`ar_quest_${!!with_ar}`)}
-      </Typography>
+      {!!questMessage && (
+        <Typography variant="caption" className="ar-task" noWrap>
+          {questMessage}
+        </Typography>
+      )}
     </>
   )
 }

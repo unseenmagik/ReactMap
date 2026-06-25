@@ -160,7 +160,7 @@ export const renderOption = ({ key, ...props }, option) => {
         primary={formatDistance(option.distance)}
         secondary={
           searchTab === 'quests' ? (
-            questMessage || t(`ar_quest_${!!option.with_ar}`).toString()
+            questMessage || ''
           ) : searchTab === 'invasions' ? (
             <Timer expireTime={option.incident_expire_timestamp} />
           ) : searchTab === 'lures' ? (

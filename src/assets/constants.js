@@ -37,12 +37,6 @@ export const BADGES = /** @type {const} */ ([
   'badge_4',
 ])
 
-export const QUEST_SETS = /** @type {const} */ ([
-  'with_ar',
-  'both',
-  'without_ar',
-])
-
 export const WAYFARER_OPTIONS = /** @type {const} */ ([
   'rings',
   'includeSponsored',
