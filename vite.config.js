@@ -99,9 +99,14 @@ const viteConfig = defineConfig(({ mode }) => {
         : []),
       localePlugin(isDevelopment),
       faviconPlugin(isDevelopment),
-      muteWarningsPlugin([
-        ['SOURCEMAP_ERROR', "Can't resolve original location of error"],
-      ]),
+      // Only mute the sourcemap warning when full sourcemaps are emitted
+      // (release/dev). Plain builds use 'hidden' sourcemaps, so the warning
+      // never fires and the plugin would otherwise report an unused mute.
+      muteWarningsPlugin(
+        isRelease || isDevelopment
+          ? [['SOURCEMAP_ERROR', "Can't resolve original location of error"]]
+          : [],
+      ),
     ],
     optimizeDeps: isDevelopment ? { exclude: ['@mui/*'] } : undefined,
     publicDir: 'public',
