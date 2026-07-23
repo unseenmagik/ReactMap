@@ -197,12 +197,14 @@ const parseAreas = (featureCollection) => {
   const names = new Set()
   /** @type {Record<string, string[]>} */
   const withoutParents = {}
+  /** @type {Record<string, string[]>} */
+  const childrenByParent = {}
 
   if (!featureCollection) {
-    return { names, polygons, withoutParents }
+    return { names, polygons, withoutParents, childrenByParent }
   }
   featureCollection.features.forEach((feature) => {
-    const { name, key, manual } = feature.properties
+    const { name, key, manual, parent } = feature.properties
     if (name && !manual && feature.geometry.type.includes('Polygon')) {
       const { coordinates } = feature.geometry
       if (feature.geometry.type === 'Polygon') {
@@ -242,9 +244,16 @@ const parseAreas = (featureCollection) => {
       } else {
         withoutParents[name] = [key]
       }
+      if (parent) {
+        if (childrenByParent[parent]) {
+          childrenByParent[parent].push(key)
+        } else {
+          childrenByParent[parent] = [key]
+        }
+      }
     }
   })
-  return { names, withoutParents, polygons }
+  return { names, withoutParents, childrenByParent, polygons }
 }
 
 /**

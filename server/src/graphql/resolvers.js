@@ -363,6 +363,7 @@ const resolvers = {
               (feature) =>
                 !feature.properties.hidden &&
                 (!perms.areaRestrictions.length ||
+                  perms.areaRestrictions.includes(feature.properties.key) ||
                   perms.areaRestrictions.includes(feature.properties.name) ||
                   perms.areaRestrictions.includes(feature.properties.parent)),
             ),
@@ -380,8 +381,10 @@ const resolvers = {
               ...parent,
               children: perms.areaRestrictions.includes(parent.name)
                 ? parent.children
-                : parent.children.filter((child) =>
-                    perms.areaRestrictions.includes(child.properties.name),
+                : parent.children.filter(
+                    (child) =>
+                      perms.areaRestrictions.includes(child.properties.key) ||
+                      perms.areaRestrictions.includes(child.properties.name),
                   ),
             }))
             .filter((parent) => parent.children.length)
